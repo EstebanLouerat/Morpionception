@@ -1,0 +1,123 @@
+/* --- Styles page paramètres --- */
+.container {
+  min-height: 100dvh;
+  padding: 2rem 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2rem;
+  background: var(--primary-bg);
+}
+
+.title {
+  font-size: 3rem;
+  color: #2d3436;
+  text-align: center;
+}
+
+.card {
+  width: min(100%, 420px);
+  padding: 1.75rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.rowHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  color: #2d3436;
+  font-size: 1.15rem;
+  font-weight: bold;
+}
+
+.value {
+  min-width: 3.5em;
+  text-align: right;
+  font-size: 1rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--primary-x);
+}
+
+/* --- Slider --- */
+.slider {
+  --fill: 50%;
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  height: 10px;
+  border-radius: 999px;
+  background: linear-gradient(
+    to right,
+    var(--primary-x) var(--fill),
+    #dfe6e9 var(--fill)
+  );
+  cursor: pointer;
+  touch-action: pan-y;
+  -webkit-tap-highlight-color: transparent;
+}
+.slider:focus-visible {
+  outline: 3px solid var(--btn-bg);
+  outline-offset: 6px;
+}
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #fff;
+  border: 4px solid var(--primary-x);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  transition: transform 0.15s;
+}
+.slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  border: 4px solid var(--primary-x);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+.slider:active::-webkit-slider-thumb {
+  transform: scale(1.15);
+}
+
+/* --- Bouton retour (même style que l'accueil) --- */
+.btn {
+  border: none;
+  padding: 0;
+  width: auto;
+  background: var(--btn-bg);
+  border-radius: 15px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.btnTop {
+  display: block;
+  padding: 15px 45px;
+  border-radius: 15px;
+  font-size: 1.5rem;
+  background: var(--btn-bg-alt);
+  color: white;
+  transform: translateY(-8px);
+}
+.btn:active .btnTop {
+  transform: translateY(-2px);
+}
+
+@media (max-width: 600px) {
+  .title {
+    font-size: 2.2rem;
+  }
+}

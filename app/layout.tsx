@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import RouterMounting from "./wrapper";
+import AudioManager from "./audio/AudioManager";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -29,7 +30,10 @@ export default function RootLayout({
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
-        <RouterMounting>{children}</RouterMounting>
+        <RouterMounting>
+          <AudioManager />
+          {children}
+        </RouterMounting>
       </body>
     </html>
   );

@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import confetti from "canvas-confetti";
+import { playFx } from "../audio/engine";
 
 type Player = "X" | "O" | null;
 type Board = Player[][];
@@ -131,13 +132,15 @@ export default function Game() {
     activeBoard !== null && !closedBoards[activeBoard] ? activeBoard : null;
 
   const handleCellClick = (superIdx: number, subIdx: number) => {
+    if (gameOver) return;
     if (
-      gameOver ||
       closedBoards[superIdx] ||
       (forcedBoard !== null && forcedBoard !== superIdx) ||
       superBoard[superIdx][Math.floor(subIdx / 3)][subIdx % 3]
-    )
+    ) {
+      playFx("invalid");
       return;
+    }
     const newBoard = superBoard.map((grid, i) =>
       i === superIdx
         ? grid.map((row, r) =>
@@ -148,6 +151,9 @@ export default function Game() {
     // const flat = newBoard[superIdx].flat();
     const newWinners = [...winners];
     newWinners[superIdx] = checkWin(newBoard[superIdx]);
+    playFx(currentPlayer === "X" ? "placeX" : "placeO");
+    if (newWinners[superIdx]) playFx("boardWon", 0.12);
+    else if (isBoardFull(newBoard[superIdx])) playFx("boardDraw", 0.12);
     setSuperBoard(newBoard);
     setWinners(newWinners);
     setCurrentPlayer(currentPlayer === "X" ? "O" : "X");
@@ -160,6 +166,7 @@ export default function Game() {
   };
 
   const resetGame = () => {
+    playFx("click");
     setSuperBoard(JSON.parse(JSON.stringify(initialSuperBoard)));
     setWinners(Array(9).fill(null));
     setCurrentPlayer("X");
@@ -174,6 +181,7 @@ export default function Game() {
     if (NUMPAD_CANCEL_CODES.includes(e.code)) {
       if (selectedBoard !== null) {
         e.preventDefault();
+        playFx("click");
         setSelectedBoard(null);
       }
       return;
@@ -190,7 +198,12 @@ export default function Game() {
     }
     // Free choice: first key picks the board, second key picks the cell
     if (selectedBoard === null) {
-      if (!closedBoards[idx]) setSelectedBoard(idx);
+      if (closedBoards[idx]) {
+        playFx("invalid");
+      } else {
+        playFx("select");
+        setSelectedBoard(idx);
+      }
       return;
     }
     handleCellClick(selectedBoard, idx);
@@ -213,10 +226,12 @@ export default function Game() {
   useEffect(() => {
     if (globalWinner) {
       confetti({ particleCount: 150, spread: 90, origin: { y: 0.6 } });
+      playFx("gameWin", 0.4);
       setShowModal(false);
       const timeout = setTimeout(() => setShowModal(true), 2000);
       return () => clearTimeout(timeout);
     } else if (isDraw) {
+      playFx("gameDraw", 0.4);
       setShowModal(false);
       const timeout = setTimeout(() => setShowModal(true), 1000);
       return () => clearTimeout(timeout);
@@ -399,6 +414,7 @@ export default function Game() {
           <button
             className={styles.btn}
             onClick={() => {
+              playFx("click");
               router.push("/");
             }}
           >

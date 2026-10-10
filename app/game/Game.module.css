@@ -1,5 +1,6 @@
 /* --- Styles du jeu Morpionception --- */
 .container {
+  position: relative;
   min-height: 100vh;
   padding: 2rem;
   display: flex;
@@ -17,6 +18,42 @@
 }
 .container.o {
   outline-color: var(--primary-o);
+}
+
+.settingsBtn {
+  position: absolute;
+  top: 1.25rem;
+  right: 1.25rem;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Reset the global button styles */
+  width: 48px;
+  height: 48px;
+  min-height: 0;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: #fff;
+  color: #2d3436;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+.settingsBtn svg {
+  transition: transform 0.4s;
+}
+.container.x .settingsBtn {
+  color: var(--primary-x);
+}
+.container.o .settingsBtn {
+  color: var(--primary-o);
+}
+@media (hover: hover) {
+  .settingsBtn:hover svg {
+    transform: rotate(60deg);
+  }
 }
 
 .title {
@@ -328,9 +365,22 @@
   }
 
   .title {
-    font-size: 1.9rem;
+    font-size: clamp(1.5rem, 8vw, 1.9rem);
     margin: 0.5rem 0 0.75rem;
+    /* Keep clear of the settings button */
+    padding: 0 46px;
     text-align: center;
+  }
+
+  .settingsBtn {
+    top: 0.75rem;
+    right: 0.75rem;
+    width: 42px;
+    height: 42px;
+  }
+  .settingsBtn svg {
+    width: 22px;
+    height: 22px;
   }
 
   .status {
@@ -464,6 +514,13 @@
 
   .boardWinner {
     font-size: 90cqi;
+  }
+
+  .settingsBtn {
+    top: 0.75rem;
+    right: 0.75rem;
+    width: 42px;
+    height: 42px;
   }
 
   .title {

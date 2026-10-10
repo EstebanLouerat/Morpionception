@@ -57,7 +57,9 @@ export default function Settings() {
         className={styles.btn}
         onClick={() => {
           playFx("click");
-          router.push("/");
+          // Opened from the game screen: go back to the (saved) game
+          const from = new URLSearchParams(window.location.search).get("from");
+          router.push(from === "game" ? "/game" : "/");
         }}
       >
         <span className={styles.btnTop}>Retour</span>

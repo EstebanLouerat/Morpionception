@@ -1,0 +1,390 @@
+/* --- Styles du jeu Morpionception --- */
+.container {
+  min-height: 100vh;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: var(--primary-bg);
+  outline: 5px solid var(--primary-x);
+  border-radius: 25px;
+  outline-offset: -5px;
+  transition: outline-color 0.2s;
+}
+
+.container.x {
+  outline-color: var(--primary-x);
+}
+.container.o {
+  outline-color: var(--primary-o);
+}
+
+.title {
+  font-size: 3rem;
+  margin-bottom: 2rem;
+  color: #2d3436;
+}
+.title span {
+  color: var(--primary-x);
+}
+
+.superBoard {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin: 2rem 0;
+  scale: clamp(0.6, 1vw + 0.5, 1);
+}
+
+.board {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  padding: 8px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  border: 2px solid transparent;
+  transition: border-color 0.2s;
+}
+
+/* .board.active {
+  border-color: var(--primary-x);
+} */
+
+.board.active-x {
+  border-color: var(--primary-x);
+}
+
+.board.active-o {
+  border-color: var(--primary-o);
+}
+
+.board.selected-x {
+  outline: 3px dashed var(--primary-x);
+  outline-offset: 3px;
+}
+.board.selected-o {
+  outline: 3px dashed var(--primary-o);
+  outline-offset: 3px;
+}
+
+.board.draw {
+  background: var(--primary-draw);
+  transition: background 0.3s;
+}
+
+.board.x {
+  background: var(--primary-x);
+  transition: background 0.3s;
+}
+.board.o {
+  background: var(--primary-o);
+  transition: background 0.3s;
+}
+
+.cell {
+  width: 50px;
+  height: 50px;
+  border: none;
+  background: #f8f9fa;
+  border-radius: 8px;
+  font-size: 1.5rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.cell:hover {
+  background: #e9ecef;
+}
+.cell.x {
+  color: var(--primary-x);
+}
+.cell.o {
+  color: var(--primary-o);
+}
+.cell:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.boardWinner {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10rem;
+  opacity: 0.5;
+  pointer-events: none;
+}
+.boardWinner.x {
+  color: var(--primary-x);
+}
+.boardWinner.o {
+  color: var(--primary-o);
+}
+.boardWinner.draw {
+  color: var(--primary-draw-dark);
+}
+
+.numpadHint {
+  font-size: 0.9rem;
+  color: #636e72;
+  margin-top: -1rem;
+}
+
+.currPlayer {
+  font-size: 1.2rem;
+  font-weight: bold;
+}
+.currPlayer.x {
+  color: var(--primary-x);
+}
+.currPlayer.o {
+  color: var(--primary-o);
+}
+
+.status {
+  font-size: 1.2rem;
+  color: #2d3436;
+  position: absolute;
+  margin-bottom: 1rem;
+  padding: 0.5rem 2rem;
+  right: 15px;
+  top: 50vh;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.5s;
+}
+.status span {
+  color: var(--primary-x);
+}
+.status.winner {
+  color: var(--primary-x);
+  font-weight: bold;
+}
+
+.btnContainer {
+  display: flex;
+  position: absolute;
+  left: 0;
+  top: 40vh;
+  margin-top: 2rem;
+  transition: transform 0.5s;
+}
+.btnContainer .left {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border-radius: 15px;
+  width: 250px;
+  gap: 0.7rem;
+}
+.btnContainer .right {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2rem;
+}
+.btnToggle {
+  height: 6em;
+  width: 3em;
+  background-color: var(--btn-bg);
+  border: none;
+  border-radius: 0 10px 10px 0;
+  font-weight: 500;
+  font-size: 1rem;
+  visibility: hidden;
+}
+.btnToggle:hover {
+  scale: 1.05;
+}
+
+.btn {
+  border: none;
+  padding: 0;
+  background: var(--btn-bg);
+  border-radius: 15px;
+  max-width: 200px;
+  cursor: pointer;
+  font-family: inherit;
+  margin: 20px 0 10px 0;
+}
+.btnTop {
+  display: block;
+  padding: 15px 45px;
+  border-radius: 15px;
+  font-size: 1.2rem;
+  background: var(--btn-bg-alt);
+  color: white;
+  transform: translateY(-8px);
+}
+.btn:active .btnTop {
+  transform: translateY(-2px);
+}
+
+.blurred {
+  filter: blur(4px);
+  pointer-events: none;
+  user-select: none;
+}
+
+/* --- Modal --- */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(8px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.modal {
+  background: #fff;
+  border-radius: 16px;
+  padding: 32px 40px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  text-align: center;
+  min-width: 300px;
+}
+.modal > h2 {
+  color: black;
+}
+.modal > h2 .x {
+  color: var(--primary-x);
+}
+.modal > h2 .o {
+  color: var(--primary-o);
+}
+.modalBtns {
+  margin-top: 24px;
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+}
+
+/* --- Responsive --- */
+@media screen and (max-width: 1080px) and (min-width: 600px) {
+  .btnToggle {
+    visibility: visible;
+  }
+  .closed {
+    transform: translateX(-250px);
+  }
+  .btnContainer .left {
+    background: rgba(83, 83, 83, 0.5);
+  }
+  .status {
+    right: 40%;
+    top: 92%;
+    padding: 0.5rem 1rem;
+    font-size: 1rem;
+    width: 200px;
+    text-align: center;
+  }
+  .superBoard {
+    scale: clamp(0.75, 1vw + 0.7, 1);
+  }
+}
+
+@media (max-width: 600px) {
+  .container {
+    border-radius: 0;
+  }
+
+  .numpadHint {
+    display: none;
+  }
+
+  .title {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+    text-align: center;
+  }
+
+  .superBoard {
+    scale: clamp(0.6, 0.7, 1);
+    gap: 0.5rem;
+    margin: 1rem 0;
+  }
+
+  .board {
+    padding: 2px;
+    border-radius: 8px;
+    box-shadow: none;
+    gap: 2px;
+  }
+
+  .cell {
+    width: 38px;
+    height: 38px;
+    font-size: 1.1rem;
+    border-radius: 5px;
+    /* padding: 0; */
+  }
+
+  .boardWinner {
+    font-size: 8rem;
+  }
+
+  .status {
+    position: static;
+    margin: 0.5rem 0 1rem 0;
+    padding: 0.3rem 1rem;
+    font-size: 1rem;
+    width: 100%;
+    text-align: center;
+    background: #fff;
+    right: auto;
+    top: auto;
+    box-shadow: none;
+  }
+
+  .btnContainer {
+    position: static;
+    flex-direction: column;
+    align-items: stretch;
+    margin: 1rem 0 0 0;
+    width: 100%;
+  }
+  .btnContainer .left,
+  .btnContainer .right {
+    width: 100%;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+  .btn {
+    max-width: 100%;
+    margin: 0.5rem 0;
+  }
+  .btnTop {
+    font-size: 1rem;
+    padding: 10px 0;
+  }
+  .btnToggle {
+    width: 100%;
+    height: 3em;
+    border-radius: 10px;
+    font-size: 1.2rem;
+  }
+
+  .modal {
+    min-width: unset;
+    width: 90vw;
+    padding: 1rem;
+  }
+}

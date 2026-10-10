@@ -1,6 +1,14 @@
+/* --- Normalisation de base --- */
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --primary-x: #6c5ce7;
+  --primary-o: #e84393;
+  --primary-draw: #fdcb6e;
+  --primary-draw-dark: #e17055;
+  --primary-bg: #f0f2f5;
+  --btn-bg: hsl(253, 98%, 77%);
+  --btn-bg-alt: hsl(278, 98%, 77%);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -14,9 +22,6 @@ html,
 body {
   max-width: 100vw;
   overflow-x: hidden;
-}
-
-body {
   color: var(--foreground);
   background: var(--background);
   font-family: Arial, Helvetica, sans-serif;
@@ -24,15 +29,65 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-* {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
-  padding: 0;
   margin: 0;
+  padding: 0;
 }
 
+/* Liens */
 a {
   color: inherit;
   text-decoration: none;
+}
+
+/* Titres */
+h2 {
+  font-family: "Source Sans Pro", sans-serif;
+}
+
+/* --- Boutons globaux --- */
+button {
+  appearance: none;
+  background-color: var(--foreground);
+  border: 2px solid #1a1a1a;
+  border-radius: 15px;
+  color: #fff;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  min-height: 50px;
+  padding: 16px 24px;
+  text-align: center;
+  transition: all 300ms cubic-bezier(0.23, 1, 0.32, 1);
+  width: 100%;
+  outline: none;
+  box-sizing: border-box;
+}
+
+button:disabled {
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+button:hover {
+  box-shadow: rgba(0, 0, 0, 0.25) 0 8px 15px;
+  transform: translateY(-2px);
+}
+
+button:active {
+  box-shadow: none;
+  transform: translateY(0);
+}
+
+input,
+button,
+select,
+textarea {
+  font-size: 16px;
 }
 
 @media (prefers-color-scheme: dark) {

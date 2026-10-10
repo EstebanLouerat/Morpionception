@@ -6,20 +6,28 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "eslint ."
   },
   "dependencies": {
+    "canvas-confetti": "^1.9.3",
+    "framer-motion": "^12.18.1",
+    "next": "^15.5.27",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "next": "15.2.3"
+    "react-dom": "^19.0.0"
   },
   "devDependencies": {
-    "typescript": "^5",
+    "@eslint/eslintrc": "^3",
+    "@types/canvas-confetti": "^1.9.0",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
-    "eslint-config-next": "15.2.3",
-    "@eslint/eslintrc": "^3"
+    "eslint-config-next": "^15.5.27",
+    "typescript": "^5"
+  },
+  "overrides": {
+    "postcss": "^8.5.29",
+    "picomatch@^2": "^2.3.2",
+    "brace-expansion@^1": "^1.1.21"
   }
 }

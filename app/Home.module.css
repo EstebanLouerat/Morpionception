@@ -1,0 +1,106 @@
+/* --- Styles page d'accueil --- */
+.container {
+  min-height: 100vh;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: var(--primary-bg);
+  position: relative;
+  overflow: hidden;
+}
+
+.animatedBackground {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 200%;
+  height: 200%;
+  background-image: repeating-linear-gradient(
+      45deg,
+      transparent 0 20px,
+      rgba(255, 255, 255, 0.03) 20px 40px
+    ),
+    repeating-linear-gradient(
+      -45deg,
+      transparent 0 20px,
+      rgba(255, 255, 255, 0.03) 20px 40px
+    );
+  animation: moveBackground 40s linear infinite;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.animatedBackground::before,
+.animatedBackground::after {
+  position: absolute;
+  font-size: 8rem;
+  font-weight: bold;
+  white-space: nowrap;
+  color: rgba(255, 255, 255, 0.05);
+  left: 0;
+}
+
+.animatedBackground::before {
+  content: "X O X O X O X O X O X O X O X O ";
+  top: 20%;
+  animation: scrollXO 60s linear infinite;
+}
+
+.animatedBackground::after {
+  content: "O X O X O X O X O X O X O X O X ";
+  top: 60%;
+  animation: scrollXOReverse 80s linear infinite;
+}
+
+@keyframes scrollXO {
+  0% { transform: translateX(0%); }
+  100% { transform: translateX(-100%); }
+}
+@keyframes scrollXOReverse {
+  0% { transform: translateX(0%); }
+  100% { transform: translateX(100%); }
+}
+@keyframes moveBackground {
+  0% { transform: translate(0, 0); }
+  100% { transform: translate(-25%, -25%); }
+}
+
+.title {
+  font-size: 3rem;
+  margin-bottom: 2rem;
+  color: #2d3436;
+}
+.title span {
+  color: var(--primary-x);
+}
+
+.btnContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rem;
+  margin-top: 2rem;
+}
+
+.btn {
+  border: none;
+  padding: 0;
+  background: var(--btn-bg);
+  border-radius: 15px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.btnTop {
+  display: block;
+  padding: 15px 45px;
+  border-radius: 15px;
+  font-size: 2rem;
+  background: var(--btn-bg-alt);
+  color: white;
+  transform: translateY(-8px);
+}
+.btn:active .btnTop {
+  transform: translateY(-2px);
+}

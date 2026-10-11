@@ -1,6 +1,6 @@
 import type { IconName } from "../ui/Icon";
 
-export type ModeId = "local" | "ai" | "ranked" | "local2v2" | "fun";
+export type ModeId = "local" | "ai" | "ranked" | "local2v2" | "fun" | "online";
 
 export type GameMode = {
   id: ModeId;
@@ -63,6 +63,18 @@ export const MODES: GameMode[] = [
 ];
 
 export const DEFAULT_MODE = MODES[0];
+
+/** Game against a friend on another device (/jouer/ami), not listed with the modes */
+export const ONLINE_MODE: GameMode = {
+  id: "online",
+  name: "En ligne",
+  tagline: "Invite un ami avec un lien, un code de salon ou un QR code.",
+  icon: "userPlus",
+  available: true,
+  // The game screen shows "Toi" and "Ton ami" instead
+  players: { X: "Joueur X", O: "Joueur O" },
+  clockOption: true,
+};
 
 /** Mode from an id (e.g. the ?mode= URL param), falling back to a playable one */
 export const getMode = (id: string | null | undefined): GameMode => {

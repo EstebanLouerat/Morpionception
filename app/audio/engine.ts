@@ -14,6 +14,7 @@ export type Fx =
   | "boardWon"
   | "boardDraw"
   | "gameWin"
+  | "gameLose"
   | "gameDraw";
 
 // Loudest gain of each bus when its slider is at 100%
@@ -127,6 +128,10 @@ const FX: Record<Fx, (t: number) => void> = {
     [72, 76, 79, 84].forEach((n) =>
       tone(fxBus, t + 0.5, midiToFreq(n), 1.2, { type: "triangle", gain: 0.14, attack: 0.02 })
     );
+  },
+  gameLose: (t) => {
+    arpeggio(t, [67, 63, 60], 0.2, 0.4, { type: "triangle", gain: 0.2 });
+    tone(fxBus, t + 0.6, midiToFreq(55), 0.9, { type: "triangle", gain: 0.16 });
   },
   gameDraw: (t) =>
     arpeggio(t, [64, 62, 60, 55], 0.18, 0.35, { type: "triangle", gain: 0.2 }),

@@ -69,7 +69,7 @@ export default function Jouer() {
             <strong>Avec un ami</strong>
             <small>Invite-le avec un lien, un code de salon ou un QR code.</small>
           </span>
-          <Badge />
+          <Icon name="chevronRight" className={styles.chevron} />
         </Link>
       </section>
     </PageShell>

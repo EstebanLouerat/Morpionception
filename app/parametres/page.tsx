@@ -14,11 +14,13 @@ const SLIDERS: { key: keyof AudioSettings; label: string }[] = [
   { key: "music", label: "Musique" },
 ];
 
-// Opened from the game (?from=game&mode=…): the back button returns to it
+// Opened from the game (?from=game&mode=… or &room=…): the back button returns to it
 const getBackHref = () => {
   if (typeof window === "undefined") return "/";
   const params = new URLSearchParams(window.location.search);
   if (params.get("from") !== "game") return "/";
+  const room = params.get("room");
+  if (room) return `/game?room=${encodeURIComponent(room)}`;
   const mode = params.get("mode");
   return mode ? `/game?mode=${encodeURIComponent(mode)}` : "/game";
 };

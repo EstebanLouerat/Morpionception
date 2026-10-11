@@ -1,12 +1,13 @@
 /* --- Styles page d'accueil --- */
 .container {
-  min-height: 100vh;
-  padding: 2rem;
+  min-height: 100dvh;
+  padding: 2rem 1rem;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: var(--primary-bg);
+  gap: 3rem;
+  background: var(--bg);
   position: relative;
   overflow: hidden;
 }
@@ -17,16 +18,6 @@
   left: 0;
   width: 200%;
   height: 200%;
-  background-image: repeating-linear-gradient(
-      45deg,
-      transparent 0 20px,
-      rgba(255, 255, 255, 0.03) 20px 40px
-    ),
-    repeating-linear-gradient(
-      -45deg,
-      transparent 0 20px,
-      rgba(255, 255, 255, 0.03) 20px 40px
-    );
   animation: moveBackground 40s linear infinite;
   z-index: 0;
   pointer-events: none;
@@ -38,7 +29,8 @@
   font-size: 8rem;
   font-weight: bold;
   white-space: nowrap;
-  color: rgba(255, 255, 255, 0.05);
+  color: var(--text);
+  opacity: 0.04;
   left: 0;
 }
 
@@ -67,40 +59,41 @@
   100% { transform: translate(-25%, -25%); }
 }
 
+.topBar {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  right: 1rem;
+  z-index: 1;
+  display: flex;
+  justify-content: space-between;
+}
+.topBarRight {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.hero {
+  position: relative;
+  text-align: center;
+}
 .title {
-  font-size: 3rem;
-  margin-bottom: 2rem;
-  color: #2d3436;
+  font-size: clamp(2.4rem, 11vw, 4rem);
+  color: var(--text);
 }
 .title span {
   color: var(--primary-x);
 }
+.tagline {
+  margin-top: 0.5rem;
+  color: var(--text-muted);
+  font-size: 1.1rem;
+}
 
-.btnContainer {
+.menu {
+  position: relative;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 2rem;
-  margin-top: 2rem;
-}
-
-.btn {
-  border: none;
-  padding: 0;
-  background: var(--btn-bg);
-  border-radius: 15px;
-  cursor: pointer;
-  font-family: inherit;
-}
-.btnTop {
-  display: block;
-  padding: 15px 45px;
-  border-radius: 15px;
-  font-size: 2rem;
-  background: var(--btn-bg-alt);
-  color: white;
-  transform: translateY(-8px);
-}
-.btn:active .btnTop {
-  transform: translateY(-2px);
+  gap: 1.25rem;
+  width: min(100%, 340px);
 }

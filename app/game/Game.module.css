@@ -6,7 +6,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  background: var(--primary-bg);
+  background: var(--bg);
   outline: 5px solid var(--primary-x);
   border-radius: 25px;
   outline-offset: -5px;
@@ -20,28 +20,14 @@
   outline-color: var(--primary-o);
 }
 
-.settingsBtn {
+/* Base look comes from the shared icon button (app/ui/Button) */
+.container .settingsBtn {
   position: absolute;
   top: 1.25rem;
   right: 1.25rem;
   z-index: 10;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  /* Reset the global button styles */
-  width: 48px;
-  height: 48px;
-  min-height: 0;
-  padding: 0;
-  border: none;
-  border-radius: 50%;
-  background: #fff;
-  color: #2d3436;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
-  touch-action: manipulation;
-  -webkit-tap-highlight-color: transparent;
 }
-.settingsBtn svg {
+.container .settingsBtn svg {
   transition: transform 0.4s;
 }
 .container.x .settingsBtn {
@@ -51,25 +37,31 @@
   color: var(--primary-o);
 }
 @media (hover: hover) {
-  .settingsBtn:hover svg {
+  .container .settingsBtn:hover svg {
     transform: rotate(60deg);
   }
 }
 
 .title {
   font-size: 3rem;
-  margin-bottom: 2rem;
-  color: #2d3436;
+  margin-bottom: 1rem;
+  color: var(--text);
 }
 .title span {
   color: var(--primary-x);
+}
+
+.players {
+  display: flex;
+  justify-content: center;
+  width: 100%;
 }
 
 .superBoard {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 1rem;
-  margin: 2rem 0;
+  margin: 1.5rem 0;
   scale: clamp(0.6, 1vw + 0.5, 1);
 }
 
@@ -79,16 +71,12 @@
   grid-template-columns: repeat(3, 1fr);
   gap: 4px;
   padding: 8px;
-  background: #fff;
+  background: var(--surface);
   border-radius: 12px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 6px var(--shadow);
   border: 2px solid transparent;
   transition: border-color 0.2s;
 }
-
-/* .board.active {
-  border-color: var(--primary-x);
-} */
 
 .board.active-x {
   border-color: var(--primary-x);
@@ -124,11 +112,9 @@
 .cell {
   width: 50px;
   height: 50px;
-  /* Reset the global button styles (padding, min-height, shadow) */
-  min-height: 0;
   padding: 0;
   border: none;
-  background: #f8f9fa;
+  background: var(--surface-muted);
   border-radius: 8px;
   font-size: 1.5rem;
   font-weight: bold;
@@ -140,13 +126,10 @@
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
 }
-.cell:hover {
-  box-shadow: none;
-}
 /* Only on real pointers, otherwise the hover state sticks after a tap */
 @media (hover: hover) {
   .cell:hover {
-    background: #e9ecef;
+    background: var(--surface-hover);
   }
 }
 .cell.x {
@@ -185,40 +168,8 @@
 
 .numpadHint {
   font-size: 0.9rem;
-  color: #636e72;
-  margin-top: -1rem;
-}
-
-.currPlayer {
-  font-size: 1.2rem;
-  font-weight: bold;
-}
-.currPlayer.x {
-  color: var(--primary-x);
-}
-.currPlayer.o {
-  color: var(--primary-o);
-}
-
-.status {
-  font-size: 1.2rem;
-  color: #2d3436;
-  position: absolute;
-  margin-bottom: 1rem;
-  padding: 0.5rem 2rem;
-  right: 15px;
-  top: 50vh;
-  border-radius: 8px;
-  background: #fff;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  transition: all 0.5s;
-}
-.status span {
-  color: var(--primary-x);
-}
-.status.winner {
-  color: var(--primary-x);
-  font-weight: bold;
+  color: var(--text-muted);
+  margin-top: 0.75rem;
 }
 
 .btnContainer {
@@ -235,7 +186,8 @@
   align-items: center;
   border-radius: 15px;
   width: 250px;
-  gap: 0.7rem;
+  gap: 1.25rem;
+  padding: 1rem 0;
 }
 .btnContainer .right {
   display: flex;
@@ -247,8 +199,8 @@
 .btnToggle {
   height: 6em;
   width: 3em;
+  color: #fff;
   background-color: var(--btn-bg);
-  border: none;
   border-radius: 0 10px 10px 0;
   font-weight: 500;
   font-size: 1rem;
@@ -258,33 +210,10 @@
   scale: 1.05;
 }
 
-.btn {
-  border: none;
-  padding: 0;
-  background: var(--btn-bg);
-  border-radius: 15px;
+/* Base look comes from the shared Button (app/ui/Button) */
+.ctrlBtn {
+  width: 100%;
   max-width: 200px;
-  cursor: pointer;
-  font-family: inherit;
-  margin: 20px 0 10px 0;
-}
-.btnTop {
-  display: block;
-  padding: 15px 45px;
-  border-radius: 15px;
-  font-size: 1.2rem;
-  background: var(--btn-bg-alt);
-  color: white;
-  transform: translateY(-8px);
-}
-.btn:active .btnTop {
-  transform: translateY(-2px);
-}
-
-.blurred {
-  filter: blur(4px);
-  pointer-events: none;
-  user-select: none;
 }
 
 /* --- Modal --- */
@@ -294,7 +223,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.4);
+  background: var(--overlay);
   backdrop-filter: blur(8px);
   z-index: 1000;
   display: flex;
@@ -302,7 +231,7 @@
   justify-content: center;
 }
 .modal {
-  background: #fff;
+  background: var(--surface);
   border-radius: 16px;
   padding: 32px 40px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
@@ -310,7 +239,7 @@
   min-width: 300px;
 }
 .modal > h2 {
-  color: black;
+  color: var(--text);
 }
 .modal > h2 .x {
   color: var(--primary-x);
@@ -319,10 +248,13 @@
   color: var(--primary-o);
 }
 .modalBtns {
-  margin-top: 24px;
+  margin-top: 28px;
   display: flex;
   gap: 16px;
   justify-content: center;
+}
+.modalBtns > * {
+  flex: 1;
 }
 
 /* --- Responsive --- */
@@ -335,14 +267,6 @@
   }
   .btnContainer .left {
     background: rgba(83, 83, 83, 0.5);
-  }
-  .status {
-    right: 40%;
-    top: 92%;
-    padding: 0.5rem 1rem;
-    font-size: 1rem;
-    width: 200px;
-    text-align: center;
   }
   .superBoard {
     scale: clamp(0.75, 1vw + 0.7, 1);
@@ -372,31 +296,21 @@
     text-align: center;
   }
 
-  .settingsBtn {
+  .container .settingsBtn {
     top: 0.75rem;
     right: 0.75rem;
     width: 42px;
     height: 42px;
   }
-  .settingsBtn svg {
+  .container .settingsBtn svg {
     width: 22px;
     height: 22px;
-  }
-
-  .status {
-    position: static;
-    margin: 0;
-    padding: 0.4rem 1rem;
-    font-size: 1rem;
-    width: 100%;
-    text-align: center;
-    box-shadow: none;
   }
 
   .superBoard {
     scale: none;
     /* Full width, but shrink on short screens so the buttons stay visible */
-    width: min(100%, calc(100dvh - 15rem));
+    width: min(100%, calc(100dvh - 15.5rem));
     min-width: 270px;
     gap: 6px;
     margin: 0.75rem 0;
@@ -407,7 +321,7 @@
     padding: 3px;
     gap: 3px;
     border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 2px 4px var(--shadow);
   }
 
   .board.selected-x,
@@ -438,28 +352,24 @@
     flex-direction: row;
     width: 100%;
     gap: 0.75rem;
+    padding: 0.5rem 0 0;
   }
   .btnContainer .right {
     display: none;
   }
-  .btn {
+  .ctrlBtn {
     flex: 1;
     max-width: none;
-    min-height: 0;
-    margin: 0.5rem 0 0;
   }
-  .btnTop {
+  .container .ctrlBtn > span {
+    padding: 12px 6px;
     font-size: 1rem;
-    padding: 12px 0;
   }
 
   .modal {
     min-width: unset;
     width: 90vw;
     padding: 1.5rem 1rem;
-  }
-  .modalBtns .btn {
-    margin-top: 0.5rem;
   }
 }
 
@@ -516,7 +426,7 @@
     font-size: 90cqi;
   }
 
-  .settingsBtn {
+  .container .settingsBtn {
     top: 0.75rem;
     right: 0.75rem;
     width: 42px;
@@ -527,43 +437,36 @@
     grid-column: 2;
     font-size: 1.75rem;
     margin: 0.5rem 0;
+    padding-right: 46px;
     text-align: center;
   }
 
-  .status {
+  .players {
     grid-column: 2;
-    position: static;
-    width: 100%;
-    margin: 0;
-    padding: 0.4rem 1rem;
-    font-size: 1rem;
-    text-align: center;
   }
 
   .btnContainer {
     grid-column: 2;
     position: static;
     width: 100%;
-    margin: 0.5rem 0 0;
+    margin: 0.75rem 0 0;
     transform: none;
   }
   .btnContainer .left {
     width: 100%;
     background: none;
-    gap: 0;
+    gap: 1rem;
+    padding: 0.5rem 0 0;
   }
   .btnContainer .right {
     display: none;
   }
-  .btn {
-    width: 100%;
+  .ctrlBtn {
     max-width: none;
-    min-height: 0;
-    margin: 0.5rem 0 0;
   }
-  .btnTop {
+  .container .ctrlBtn > span {
+    padding: 10px 6px;
     font-size: 1rem;
-    padding: 10px 0;
   }
 
   .modal {

@@ -1,0 +1,77 @@
+/* --- Shared building blocks for the menu pages --- */
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.sectionTitle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding: 1.5rem;
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: 0 4px 12px var(--shadow);
+}
+
+.muted {
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+
+/* "Bientôt" tag on features that are not available yet */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3em;
+  flex-shrink: 0;
+  padding: 0.2em 0.6em;
+  border-radius: 999px;
+  background: var(--surface-hover);
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
+.input {
+  width: 100%;
+  padding: 0.8rem 1rem;
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-muted);
+  color: var(--text);
+  font: inherit;
+  font-size: 16px;
+  transition: border-color 0.2s;
+}
+.input:focus {
+  outline: none;
+  border-color: var(--primary-x);
+}
+.input:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* Side by side when there is room, stacked on narrow screens */
+.row {
+  display: flex;
+  gap: 1rem 0.75rem;
+  flex-wrap: wrap;
+}
+.row > * {
+  flex: 1 1 180px;
+}

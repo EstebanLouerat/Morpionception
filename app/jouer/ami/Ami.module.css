@@ -36,12 +36,76 @@
   color: var(--text-muted);
 }
 
+/* Real QR code, same footprint as the placeholder */
+.qrCode {
+  flex-shrink: 0;
+  width: 120px;
+  height: 120px;
+  border-radius: 14px;
+}
+
 .roomCode {
   font-family: var(--font-geist-mono), monospace;
   font-size: 1.8rem;
   font-weight: 700;
   letter-spacing: 0.15em;
   color: var(--text-muted);
+}
+.roomCode.ready {
+  color: var(--text);
+  user-select: all;
+}
+
+/* Waiting for the friend to join */
+.waiting {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+}
+.waiting > span:last-child {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+.waiting small {
+  font-size: 0.85rem;
+}
+.pulse {
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--primary-x);
+  animation: pulse 1.4s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--primary-x) 50%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 8px transparent;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pulse {
+    animation: none;
+  }
+}
+
+.x {
+  color: var(--primary-x);
+  font-weight: 800;
+}
+.o {
+  color: var(--primary-o);
+  font-weight: 800;
+}
+
+.error {
+  color: #e5484d;
+  font-size: 0.9rem;
+  font-weight: 700;
 }
 
 /* input.… beats the shared .input rule whatever the CSS load order */

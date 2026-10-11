@@ -23,7 +23,10 @@ Ultimate tic-tac-toe ("morpion" in French) built with Next.js, React and Framer 
   can also resume the game in progress.
 - Optional chrono (time per player for the whole game) for local and friend
   games. It starts after the first move; the player whose clock runs out loses.
-- Side choice for online games (X, O or random), drawn with the player colors.
+- Online play with a friend (`/jouer/ami`): create a room, then invite with a
+  link, a 6-character room code or a QR code. Side choice (X, O or random) and
+  optional chrono, real-time moves, opponent online status, resign, rematch
+  (sides swap) and reconnection after a refresh.
 - Light / dark theme and three player color palettes.
 
 ## Roadmap
@@ -32,19 +35,46 @@ These are in the menus as "Bientôt" (coming soon) placeholders:
 
 - Game modes: vs AI, ranked, local 2v2, fun variants (`app/game/modes.ts`).
 - Accounts (`/compte`), friends (`/amis`).
-- Online play with a friend through a link, a room code or a QR code (`/jouer/ami`).
 
 ## Project structure
 
 | Path                 | Content                                                     |
 | -------------------- | ----------------------------------------------------------- |
-| `app/game/`          | Game screen, player bar and the game mode registry          |
+| `app/game/`          | Game rules, game screen (local and online), mode registry   |
 | `app/jouer/`         | Mode selection and play-with-a-friend pages                 |
+| `app/online/`        | Online rooms: server store, API client, live room hook, QR  |
+| `app/api/rooms/`     | Rooms API (create, join, play, live updates)                |
 | `app/parametres/`    | Settings (audio, appearance)                                |
 | `app/ui/`            | Shared components: buttons, icons, loader, page layout      |
 | `app/audio/`         | Web Audio sound effects and music                           |
 | `app/theme/`         | Theme and palette settings, applied before the first paint  |
 | `app/lib/`           | Helpers (settings stores saved in `localStorage`)           |
+
+## Online play
+
+The server keeps each room and its game, and checks every move with the same
+rules as the game screen (`app/game/rules.ts`). The chrono also runs on the
+server, so a player who runs out of time loses even if nobody plays.
+
+| Route                         | Description                                         |
+| ----------------------------- | --------------------------------------------------- |
+| `POST /api/rooms`             | Create a room (`{ side, clock }`), get a seat token |
+| `POST /api/rooms/:code`       | `join`, `move`, `resign`, `rematch` or `leave`      |
+| `GET /api/rooms/:code/events` | Live room updates (server-sent events)              |
+
+Each player's seat token is saved in `localStorage`, so a refresh gets the same
+seat back. Leaving a game in progress gives it up.
+
+Rooms are kept in the memory of the Node.js server: no database to set up, but
+the app must run as a single long-lived server (`npm run dev`, or
+`npm run build` then `npm run start`, on any Node host). Rooms are lost when the
+server restarts and dropped after 15 minutes without players. Serverless hosting
+(e.g. Vercel) runs several instances that do not share memory, so online play
+would need a shared store (e.g. Redis) there.
+
+To play from a phone on the same network during development, open the app with
+the computer's local IP address (not `localhost`) before creating the room, so
+the invite link and QR code point to it.
 
 ## Getting started
 

@@ -53,8 +53,18 @@
 
 .players {
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
   width: 100%;
+}
+
+/* Online: connection and opponent status, on every screen size */
+.notice {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-align: center;
 }
 
 .superBoard {
@@ -246,6 +256,11 @@
 }
 .modal > h2 .o {
   color: var(--primary-o);
+}
+.modalNote {
+  margin-top: 0.75rem;
+  color: var(--text-muted);
+  line-height: 1.4;
 }
 .modalBtns {
   margin-top: 28px;

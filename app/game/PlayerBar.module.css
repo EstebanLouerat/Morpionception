@@ -1,0 +1,146 @@
+.bar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: min(100%, 520px);
+}
+
+.chip {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0.75rem;
+  border: 2px solid transparent;
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: 0 2px 6px var(--shadow);
+  transition: border-color 0.2s, transform 0.2s, opacity 0.3s;
+}
+/* O mirrors X so both symbols sit on the outside */
+.chip.o {
+  flex-direction: row-reverse;
+  text-align: right;
+}
+
+.symbol {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  color: #fff;
+  font-size: 1.35rem;
+  font-weight: 800;
+}
+.x .symbol {
+  background: var(--primary-x);
+}
+.o .symbol {
+  background: var(--primary-o);
+}
+
+.info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.name {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-weight: 700;
+  color: var(--text);
+}
+.status {
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+  color: var(--text-muted);
+}
+
+.active {
+  transform: translateY(-2px);
+}
+.active.x,
+.won.x {
+  border-color: var(--primary-x);
+}
+.active.o,
+.won.o {
+  border-color: var(--primary-o);
+}
+.x.active .status,
+.x.won .status,
+.x .trophy {
+  color: var(--primary-x);
+}
+.o.active .status,
+.o.won .status,
+.o .trophy {
+  color: var(--primary-o);
+}
+.lost {
+  opacity: 0.5;
+}
+
+.trophy {
+  flex-shrink: 0;
+}
+.clock {
+  flex-shrink: 0;
+  font-family: var(--font-geist-mono), monospace;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+
+.vs {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+.vs small {
+  font-size: 0.7rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+  .bar {
+    gap: 0.5rem;
+  }
+  .chip {
+    gap: 0.4rem;
+    padding: 0.4rem 0.5rem;
+  }
+  .symbol {
+    width: 30px;
+    height: 30px;
+    font-size: 1.15rem;
+    border-radius: 8px;
+  }
+  .name {
+    font-size: 0.95rem;
+  }
+  .vs small {
+    display: none;
+  }
+}

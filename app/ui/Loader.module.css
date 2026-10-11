@@ -1,0 +1,95 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 2rem;
+  color: var(--text-muted);
+  /* Fade in after a short delay so fast loads don't flash the loader */
+  opacity: 0;
+  animation: fadeIn 0.3s ease 0.15s forwards;
+}
+.fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  justify-content: center;
+  background: var(--bg);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 26px);
+  gap: 6px;
+  padding: 8px;
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: 0 4px 10px var(--shadow);
+}
+.cell {
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  background: var(--surface-muted);
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1;
+}
+.cell::after {
+  content: attr(data-symbol);
+  display: inline-block;
+  transform: scale(0);
+  animation: pop 2.7s ease-in-out infinite;
+  animation-delay: calc(var(--i) * 0.15s);
+}
+.x::after {
+  color: var(--primary-x);
+}
+.o::after {
+  color: var(--primary-o);
+}
+
+.label {
+  font-size: 0.95rem;
+  letter-spacing: 0.02em;
+}
+
+@keyframes pop {
+  0% {
+    transform: scale(0);
+  }
+  8% {
+    transform: scale(1.25);
+  }
+  13%,
+  72% {
+    transform: scale(1);
+  }
+  82%,
+  100% {
+    transform: scale(0);
+  }
+}
+@keyframes fadeIn {
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cell::after {
+    animation: none;
+    transform: scale(1);
+  }
+  .grid {
+    animation: pulse 1.6s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    50% {
+      opacity: 0.5;
+    }
+  }
+}

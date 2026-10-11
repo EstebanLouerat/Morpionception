@@ -6,6 +6,9 @@ import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import confetti from "canvas-confetti";
 import { playFx } from "../audio/engine";
+import { Button, ButtonLink, IconLink } from "../ui/Button";
+import PlayerBar from "./PlayerBar";
+import { getMode } from "./modes";
 
 type Player = "X" | "O" | null;
 type Board = Player[][];
@@ -36,6 +39,14 @@ const initialSuperBoard: SuperBoard = Array(9)
 export default function Game() {
   const STORAGE_KEY = "morpionception_state";
   const router = useRouter();
+  // Mode from /game?mode=… (only playable modes, see modes.ts)
+  const [mode] = useState(() =>
+    getMode(
+      typeof window === "undefined"
+        ? null
+        : new URLSearchParams(window.location.search).get("mode")
+    )
+  );
 
   const getInitialState = (): {
     superBoard: SuperBoard;
@@ -166,7 +177,6 @@ export default function Game() {
   };
 
   const resetGame = () => {
-    playFx("click");
     setSuperBoard(JSON.parse(JSON.stringify(initialSuperBoard)));
     setWinners(Array(9).fill(null));
     setCurrentPlayer("X");
@@ -264,8 +274,7 @@ export default function Game() {
               {globalWinner ? (
                 <h2>
                   <span className={styles[globalWinner.toLowerCase()]}>
-                    {" "}
-                    {globalWinner}{" "}
+                    {mode.players[globalWinner]}
                   </span>{" "}
                   a gagné !
                 </h2>
@@ -273,18 +282,16 @@ export default function Game() {
                 <h2>Égalité !</h2>
               )}
               <div className={styles.modalBtns}>
-                <button className={styles.btn} onClick={resetGame}>
-                  <span className={styles.btnTop}>Rejouer</span>
-                </button>
-                <button
-                  className={styles.btn}
+                <Button onClick={resetGame}>Rejouer</Button>
+                <Button
+                  variant="secondary"
                   onClick={() => {
                     resetGame();
-                    router.push("/");
+                    router.push("/jouer");
                   }}
                 >
-                  <span className={styles.btnTop}>Quitter</span>
-                </button>
+                  Quitter
+                </Button>
               </div>
             </motion.div>
           </motion.div>
@@ -292,30 +299,12 @@ export default function Game() {
       </AnimatePresence>
 
       {/* Settings (the game is saved in localStorage, so it resumes on return) */}
-      <button
+      <IconLink
         className={styles.settingsBtn}
-        aria-label="Paramètres"
-        title="Paramètres"
-        onClick={() => {
-          playFx("click");
-          router.push("/parametres?from=game");
-        }}
-      >
-        <svg
-          viewBox="0 0 24 24"
-          width="24"
-          height="24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          aria-hidden="true"
-        >
-          <circle cx="12" cy="12" r="3" />
-          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1.08-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1.08 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
-        </svg>
-      </button>
+        href={`/parametres?from=game&mode=${mode.id}`}
+        icon="gear"
+        label="Paramètres"
+      />
 
       {/* Title */}
       <motion.h1
@@ -326,29 +315,19 @@ export default function Game() {
         Morpion<span>ception</span>
       </motion.h1>
 
-      {/* Status */}
+      {/* Players */}
       <motion.div
-        className={`${styles.status} ${globalWinner ? styles.winner : ""}`}
+        className={styles.players}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.2 }}
       >
-        {globalWinner ? (
-          <>{globalWinner} wins!</>
-        ) : isDraw ? (
-          <>Draw!</>
-        ) : (
-          <>
-            Current Player:{" "}
-            <span
-              className={`${styles.currPlayer} ${
-                styles[currentPlayer?.toLowerCase() || ""]
-              }`}
-            >
-              {currentPlayer}
-            </span>
-          </>
-        )}
+        <PlayerBar
+          mode={mode}
+          current={currentPlayer}
+          winner={globalWinner}
+          isDraw={isDraw}
+        />
       </motion.div>
 
       {/* Numpad hint */}
@@ -431,21 +410,12 @@ export default function Game() {
         }`}
       >
         <div className={styles.left}>
-          {/* <button className={styles.btn} onClick={autoPlayTest}>
-            <span className={styles.btnTop}>Auto play</span>
-          </button> */}
-          <button className={styles.btn} onClick={resetGame}>
-            <span className={styles.btnTop}>Reset Game</span>
-          </button>
-          <button
-            className={styles.btn}
-            onClick={() => {
-              playFx("click");
-              router.push("/");
-            }}
-          >
-            <span className={styles.btnTop}>Quitter</span>
-          </button>
+          <Button className={styles.ctrlBtn} onClick={resetGame}>
+            Recommencer
+          </Button>
+          <ButtonLink className={styles.ctrlBtn} variant="secondary" href="/jouer">
+            Quitter
+          </ButtonLink>
         </div>
         <div className={styles.right}>
           <button

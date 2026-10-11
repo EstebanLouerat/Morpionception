@@ -1,6 +1,6 @@
 import type { IconName } from "../ui/Icon";
 
-export type ModeId = "local" | "ai" | "timed" | "ranked" | "local2v2" | "fun";
+export type ModeId = "local" | "ai" | "ranked" | "local2v2" | "fun";
 
 export type GameMode = {
   id: ModeId;
@@ -11,8 +11,8 @@ export type GameMode = {
   available: boolean;
   /** Display names of the two sides */
   players: { X: string; O: string };
-  /** Seconds per player for timed modes (shown in the player bar) */
-  clock?: number;
+  /** The chrono option (see clock.ts) applies to this mode */
+  clockOption?: boolean;
   requiresAccount?: boolean;
 };
 
@@ -24,6 +24,7 @@ export const MODES: GameMode[] = [
     icon: "device",
     available: true,
     players: { X: "Joueur 1", O: "Joueur 2" },
+    clockOption: true,
   },
   {
     id: "ai",
@@ -32,15 +33,6 @@ export const MODES: GameMode[] = [
     icon: "bot",
     available: false,
     players: { X: "Toi", O: "IA" },
-  },
-  {
-    id: "timed",
-    name: "Chrono",
-    tagline: "Temps limité pour toute la partie : réfléchis vite.",
-    icon: "clock",
-    available: false,
-    players: { X: "Joueur 1", O: "Joueur 2" },
-    clock: 180,
   },
   {
     id: "ranked",
@@ -58,6 +50,7 @@ export const MODES: GameMode[] = [
     icon: "users",
     available: false,
     players: { X: "Équipe X", O: "Équipe O" },
+    clockOption: true,
   },
   {
     id: "fun",

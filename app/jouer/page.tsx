@@ -6,6 +6,7 @@ import ui from "../ui/common.module.css";
 import PageShell from "../ui/PageShell";
 import Icon from "../ui/Icon";
 import Badge from "../ui/Badge";
+import ClockPicker from "../game/ClockPicker";
 import { MODES } from "../game/modes";
 import { playFx } from "../audio/engine";
 
@@ -51,6 +52,17 @@ export default function Jouer() {
               </div>
             );
           })}
+        </div>
+      </section>
+
+      <section className={ui.section}>
+        <h2 className={ui.sectionTitle}>Options</h2>
+        <div className={ui.card}>
+          <ClockPicker />
+          <p className={ui.muted}>
+            Pour les parties locales et entre amis. S&apos;applique à la prochaine
+            partie.
+          </p>
         </div>
       </section>
 

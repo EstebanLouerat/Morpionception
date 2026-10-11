@@ -98,6 +98,9 @@
   font-variant-numeric: tabular-nums;
   color: var(--text);
 }
+.lowTime {
+  color: #e5484d;
+}
 
 .vs {
   display: flex;

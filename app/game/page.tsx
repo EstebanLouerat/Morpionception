@@ -9,10 +9,12 @@ import { playFx } from "../audio/engine";
 import { Button, ButtonLink, IconLink } from "../ui/Button";
 import PlayerBar from "./PlayerBar";
 import { getMode } from "./modes";
+import { getClockSettings } from "./clock";
 
 type Player = "X" | "O" | null;
 type Board = Player[][];
 type SuperBoard = Board[];
+type Clocks = { X: number; O: number };
 
 const initialBoard = Array(3)
   .fill(null)
@@ -48,11 +50,17 @@ export default function Game() {
     )
   );
 
+  // Chrono of a new game: the option picked in the menu, if the mode supports it
+  const newClockLimit = () => (mode.clockOption ? getClockSettings().seconds : 0);
+  const fullClocks = (limit: number): Clocks => ({ X: limit * 1000, O: limit * 1000 });
+
   const getInitialState = (): {
     superBoard: SuperBoard;
     activeBoard: number | null;
     currentPlayer: Player;
     winners: Player[];
+    clockLimit: number;
+    clocks: Clocks;
   } => {
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem(STORAGE_KEY);
@@ -64,6 +72,8 @@ export default function Game() {
             activeBoard: parsed.activeBoard ?? null,
             currentPlayer: parsed.currentPlayer ?? "X",
             winners: parsed.winners ?? Array(9).fill(null),
+            clockLimit: parsed.clockLimit ?? 0,
+            clocks: parsed.clocks ?? fullClocks(parsed.clockLimit ?? 0),
           };
         } catch (e) {
           console.error("Échec du parsing localStorage", e);
@@ -75,6 +85,8 @@ export default function Game() {
       activeBoard: null,
       currentPlayer: "X",
       winners: Array(9).fill(null),
+      clockLimit: newClockLimit(),
+      clocks: fullClocks(newClockLimit()),
     };
   };
 
@@ -83,21 +95,33 @@ export default function Game() {
     activeBoard: initAB,
     currentPlayer: initCP,
     winners: initW,
+    clockLimit: initCL,
+    clocks: initC,
   } = getInitialState();
 
   const [superBoard, setSuperBoard] = useState<SuperBoard>(initSB);
   const [activeBoard, setActiveBoard] = useState<number | null>(initAB);
   const [currentPlayer, setCurrentPlayer] = useState<Player>(initCP);
   const [winners, setWinners] = useState<Player[]>(initW);
+  // Seconds per player for the whole game (0 = no chrono) and the time left in ms
+  const [clockLimit, setClockLimit] = useState(initCL);
+  const [clocks, setClocks] = useState<Clocks>(initC);
   const [isSidePanelOpened, setIsSidePanelOpened] = useState(false);
   const [showModal, setShowModal] = useState(false);
   // Board picked with the numpad when the player is free to choose a board
   const [selectedBoard, setSelectedBoard] = useState<number | null>(null);
 
   useEffect(() => {
-    const gameState = { superBoard, winners, currentPlayer, activeBoard };
+    const gameState = {
+      superBoard,
+      winners,
+      currentPlayer,
+      activeBoard,
+      clockLimit,
+      clocks,
+    };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(gameState));
-  }, [superBoard, winners, currentPlayer, activeBoard]);
+  }, [superBoard, winners, currentPlayer, activeBoard, clockLimit, clocks]);
 
   const checkWin = (board: Board): Player | null => {
     const lines = [
@@ -136,8 +160,17 @@ export default function Game() {
   const closedBoards = superBoard.map(
     (board, i) => !!winners[i] || isBoardFull(board)
   );
-  const isDraw = !globalWinner && closedBoards.every(Boolean);
-  const gameOver = !!globalWinner || isDraw;
+  // The player whose clock reaches 0 loses
+  const timedOut: Player =
+    !globalWinner && clockLimit > 0 && currentPlayer && clocks[currentPlayer] <= 0
+      ? currentPlayer
+      : null;
+  const winner: Player = globalWinner ?? (timedOut && (timedOut === "X" ? "O" : "X"));
+  const isDraw = !winner && closedBoards.every(Boolean);
+  const gameOver = !!winner || isDraw;
+  // The chrono starts after the first move
+  const hasStarted = superBoard.some((board) => board.some((row) => row.some(Boolean)));
+  const clockRunning = clockLimit > 0 && hasStarted && !gameOver;
   // Ignore a forced board that can no longer be played (also fixes stuck saved games)
   const forcedBoard =
     activeBoard !== null && !closedBoards[activeBoard] ? activeBoard : null;
@@ -182,8 +215,31 @@ export default function Game() {
     setCurrentPlayer("X");
     setActiveBoard(null);
     setSelectedBoard(null);
+    const limit = newClockLimit();
+    setClockLimit(limit);
+    setClocks(fullClocks(limit));
     localStorage.removeItem(STORAGE_KEY);
   };
+
+  // Count down the clock of the player to move
+  useEffect(() => {
+    if (!clockRunning || !currentPlayer) return;
+    let last = Date.now();
+    const spend = () => {
+      const now = Date.now();
+      const elapsed = now - last;
+      last = now;
+      setClocks((c) => ({
+        ...c,
+        [currentPlayer]: Math.max(0, c[currentPlayer] - elapsed),
+      }));
+    };
+    const interval = setInterval(spend, 250);
+    return () => {
+      clearInterval(interval);
+      spend(); // charge the time since the last tick before switching player
+    };
+  }, [clockRunning, currentPlayer]);
 
   const handleNumpadKey = (e: KeyboardEvent) => {
     if (e.ctrlKey || e.metaKey || e.altKey || e.repeat || gameOver) return;
@@ -234,7 +290,7 @@ export default function Game() {
   const playerClass = currentPlayer?.toLowerCase() || "";
 
   useEffect(() => {
-    if (globalWinner) {
+    if (winner) {
       confetti({ particleCount: 150, spread: 90, origin: { y: 0.6 } });
       playFx("gameWin", 0.4);
       setShowModal(false);
@@ -248,7 +304,7 @@ export default function Game() {
     } else {
       setShowModal(false);
     }
-  }, [globalWinner, isDraw]);
+  }, [winner, isDraw]);
 
   return (
     <div
@@ -271,12 +327,12 @@ export default function Game() {
               animate={{ scale: 1 }}
               exit={{ scale: 0.8 }}
             >
-              {globalWinner ? (
+              {winner ? (
                 <h2>
-                  <span className={styles[globalWinner.toLowerCase()]}>
-                    {mode.players[globalWinner]}
+                  <span className={styles[winner.toLowerCase()]}>
+                    {mode.players[winner]}
                   </span>{" "}
-                  a gagné !
+                  a gagné{timedOut ? " au temps" : ""} !
                 </h2>
               ) : (
                 <h2>Égalité !</h2>
@@ -325,8 +381,10 @@ export default function Game() {
         <PlayerBar
           mode={mode}
           current={currentPlayer}
-          winner={globalWinner}
+          winner={winner}
           isDraw={isDraw}
+          clocks={clockLimit > 0 ? clocks : null}
+          timedOut={timedOut}
         />
       </motion.div>
 

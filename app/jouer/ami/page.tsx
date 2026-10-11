@@ -8,6 +8,7 @@ import Icon from "../../ui/Icon";
 import Badge from "../../ui/Badge";
 import { Button } from "../../ui/Button";
 import ClockPicker from "../../game/ClockPicker";
+import SidePicker from "../../game/SidePicker";
 
 const CODE_LENGTH = 6;
 const cleanCode = (raw: string) =>
@@ -58,7 +59,8 @@ export default function JouerAmi() {
               Partager
             </Button>
           </div>
-          <ClockPicker disabled />
+          <SidePicker />
+          <ClockPicker />
           <Button icon="play" fullWidth disabled>
             Créer un salon
           </Button>

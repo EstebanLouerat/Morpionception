@@ -1,4 +1,4 @@
-import styles from "./ClockPicker.module.css";
+import styles from "./Options.module.css";
 import { CLOCK_CHOICES, setClockSettings, useClockSettings } from "./clock";
 import { playFx } from "../audio/engine";
 

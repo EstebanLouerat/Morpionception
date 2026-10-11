@@ -10,6 +10,7 @@ import { Button, ButtonLink, IconLink } from "../ui/Button";
 import PlayerBar from "./PlayerBar";
 import { getMode } from "./modes";
 import { getClockSettings } from "./clock";
+import { GAME_STORAGE_KEY } from "./savedGame";
 
 type Player = "X" | "O" | null;
 type Board = Player[][];
@@ -39,7 +40,6 @@ const initialSuperBoard: SuperBoard = Array(9)
   .map(() => JSON.parse(JSON.stringify(initialBoard)));
 
 export default function Game() {
-  const STORAGE_KEY = "morpionception_state";
   const router = useRouter();
   // Mode from /game?mode=… (only playable modes, see modes.ts)
   const [mode] = useState(() =>
@@ -50,7 +50,7 @@ export default function Game() {
     )
   );
 
-  // Chrono of a new game: the option picked in the menu, if the mode supports it
+  // Chrono of a new game: the option picked before the game, if the mode supports it
   const newClockLimit = () => (mode.clockOption ? getClockSettings().seconds : 0);
   const fullClocks = (limit: number): Clocks => ({ X: limit * 1000, O: limit * 1000 });
 
@@ -63,7 +63,7 @@ export default function Game() {
     clocks: Clocks;
   } => {
     if (typeof window !== "undefined") {
-      const saved = localStorage.getItem(STORAGE_KEY);
+      const saved = localStorage.getItem(GAME_STORAGE_KEY);
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
@@ -104,24 +104,12 @@ export default function Game() {
   const [currentPlayer, setCurrentPlayer] = useState<Player>(initCP);
   const [winners, setWinners] = useState<Player[]>(initW);
   // Seconds per player for the whole game (0 = no chrono) and the time left in ms
-  const [clockLimit, setClockLimit] = useState(initCL);
+  const [clockLimit] = useState(initCL);
   const [clocks, setClocks] = useState<Clocks>(initC);
   const [isSidePanelOpened, setIsSidePanelOpened] = useState(false);
   const [showModal, setShowModal] = useState(false);
   // Board picked with the numpad when the player is free to choose a board
   const [selectedBoard, setSelectedBoard] = useState<number | null>(null);
-
-  useEffect(() => {
-    const gameState = {
-      superBoard,
-      winners,
-      currentPlayer,
-      activeBoard,
-      clockLimit,
-      clocks,
-    };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(gameState));
-  }, [superBoard, winners, currentPlayer, activeBoard, clockLimit, clocks]);
 
   const checkWin = (board: Board): Player | null => {
     const lines = [
@@ -171,6 +159,30 @@ export default function Game() {
   // The chrono starts after the first move
   const hasStarted = superBoard.some((board) => board.some((row) => row.some(Boolean)));
   const clockRunning = clockLimit > 0 && hasStarted && !gameOver;
+
+  useEffect(() => {
+    const gameState = {
+      mode: mode.id,
+      over: gameOver,
+      superBoard,
+      winners,
+      currentPlayer,
+      activeBoard,
+      clockLimit,
+      clocks,
+    };
+    localStorage.setItem(GAME_STORAGE_KEY, JSON.stringify(gameState));
+  }, [
+    mode.id,
+    gameOver,
+    superBoard,
+    winners,
+    currentPlayer,
+    activeBoard,
+    clockLimit,
+    clocks,
+  ]);
+
   // Ignore a forced board that can no longer be played (also fixes stuck saved games)
   const forcedBoard =
     activeBoard !== null && !closedBoards[activeBoard] ? activeBoard : null;
@@ -215,10 +227,9 @@ export default function Game() {
     setCurrentPlayer("X");
     setActiveBoard(null);
     setSelectedBoard(null);
-    const limit = newClockLimit();
-    setClockLimit(limit);
-    setClocks(fullClocks(limit));
-    localStorage.removeItem(STORAGE_KEY);
+    // Same chrono as the game that ends
+    setClocks(fullClocks(clockLimit));
+    localStorage.removeItem(GAME_STORAGE_KEY);
   };
 
   // Count down the clock of the player to move

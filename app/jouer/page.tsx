@@ -35,7 +35,12 @@ export default function Jouer() {
             return mode.available ? (
               <Link
                 key={mode.id}
-                href={`/game?mode=${mode.id}`}
+                // Modes with options go through the options screen first
+                href={
+                  mode.clockOption
+                    ? `/jouer/partie?mode=${mode.id}`
+                    : `/game?mode=${mode.id}`
+                }
                 className={styles.card}
                 onClick={() => playFx("click")}
               >

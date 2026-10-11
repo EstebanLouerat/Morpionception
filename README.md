@@ -19,13 +19,18 @@ Ultimate tic-tac-toe ("morpion" in French) built with Next.js, React and Framer 
   - `0`, `.`, `Esc` or `Backspace` cancels the board selection.
 - Animations and confetti on victory.
 - Synthesized sound effects and background music, with volume sliders.
+- Options screen between the mode choice and the game (`/jouer/partie`), which
+  can also resume the game in progress.
+- Optional chrono (time per player for the whole game) for local and friend
+  games. It starts after the first move; the player whose clock runs out loses.
+- Side choice for online games (X, O or random), drawn with the player colors.
 - Light / dark theme and three player color palettes.
 
 ## Roadmap
 
 These are in the menus as "Bientôt" (coming soon) placeholders:
 
-- Game modes: vs AI, timed, ranked, local 2v2, fun variants (`app/game/modes.ts`).
+- Game modes: vs AI, ranked, local 2v2, fun variants (`app/game/modes.ts`).
 - Accounts (`/compte`), friends (`/amis`).
 - Online play with a friend through a link, a room code or a QR code (`/jouer/ami`).
 

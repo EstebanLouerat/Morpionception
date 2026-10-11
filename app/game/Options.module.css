@@ -1,0 +1,101 @@
+.fieldset {
+  border: none;
+  min-width: 0;
+}
+.fieldset:disabled {
+  opacity: 0.6;
+}
+.fieldset input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.legend {
+  margin-bottom: 0.75rem;
+  color: var(--text);
+  font-size: 1.1rem;
+  font-weight: bold;
+}
+
+.segmented {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+  padding: 4px;
+  border-radius: 14px;
+  background: var(--surface-muted);
+}
+.segment span {
+  display: block;
+  padding: 0.65rem 0.1rem;
+  border-radius: 10px;
+  text-align: center;
+  font-weight: 700;
+  font-size: 0.95rem;
+  white-space: nowrap;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+.fieldset:disabled .segment span {
+  cursor: not-allowed;
+}
+.segment input:checked + span {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 2px 6px var(--shadow);
+}
+.segment input:focus-visible + span {
+  outline: 3px solid var(--primary-x);
+  outline-offset: 2px;
+}
+
+/* --- Side tiles --- */
+.sides {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+}
+.sideBody {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.75rem 0.25rem;
+  border: 2px solid var(--border);
+  border-radius: 14px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s;
+}
+.fieldset:disabled .sideBody {
+  cursor: not-allowed;
+}
+.side input:checked + .sideBody {
+  border-color: var(--primary-x);
+  color: var(--text);
+}
+.side input:focus-visible + .sideBody {
+  outline: 3px solid var(--primary-x);
+  outline-offset: 2px;
+}
+.symbol {
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1;
+}
+.x {
+  color: var(--primary-x);
+}
+.o {
+  color: var(--primary-o);
+}
+.random {
+  background: linear-gradient(90deg, var(--primary-x) 50%, var(--primary-o) 50%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}

@@ -1,5 +1,5 @@
 import { fail, signup } from "../../../account/accounts";
-import { clientIp, countAttempt, isLimited } from "../../../account/auth";
+import { SIGNUP_SERVER_KEY, clientIp, countAttempt, isLimited } from "../../../account/auth";
 import { mutation, startSession } from "../../../account/routes";
 
 export const dynamic = "force-dynamic";
@@ -15,11 +15,11 @@ export const POST = mutation(async (req, body) => {
   const addressKey = `signup:${clientIp(req)}`;
   if (
     isLimited(addressKey, MAX_SIGNUPS_PER_ADDRESS, SIGNUP_WINDOW_MS) ||
-    isLimited("signup:server", MAX_SIGNUPS_PER_SERVER, SIGNUP_WINDOW_MS)
+    isLimited(SIGNUP_SERVER_KEY, MAX_SIGNUPS_PER_SERVER, SIGNUP_WINDOW_MS)
   )
-    fail("too-many-attempts");
+    fail("too-many-signups");
   const user = await signup(body);
   countAttempt(addressKey);
-  countAttempt("signup:server");
+  countAttempt(SIGNUP_SERVER_KEY);
   return startSession(req, user);
 });

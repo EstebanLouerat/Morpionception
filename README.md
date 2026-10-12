@@ -93,9 +93,10 @@ no e-mail, so a forgotten password cannot be recovered. Passwords are hashed wit
 scrypt; the session is an HTTP-only cookie valid 30 days after the last visit.
 
 Stats count online games between the accounts that were logged in when they
-created or joined the room. A game is not counted when fewer than 2 moves were
-played, when both sides are the same account, or when a player leaves while the
-other one is offline.
+created or joined the room (or logged in before the first move of a round). A game
+is not counted when fewer than 2 moves were played, when both sides are the same
+account, or when a player resigns or leaves while the other one is offline. A win
+claimed after 2 minutes of absence counts as a forfeit.
 
 | Route                        | Description                                     |
 | ---------------------------- | ----------------------------------------------- |
@@ -115,6 +116,10 @@ Settings (environment variables, all optional):
 | `MORPION_MAX_ACCOUNTS`   | Accounts the server accepts (default 5000)                               |
 | `MORPION_SECURE_COOKIES` | `1` forces Secure cookies (HTTPS proxy that does not say so)             |
 | `MORPION_IP_HEADER`      | Header with the client address for rate limits (e.g. `cf-connecting-ip`) |
+
+The limits on wrong passwords per address only work behind a proxy that sets
+`X-Forwarded-For` (or with `MORPION_IP_HEADER`): without one, a client can claim any
+address. The limits per account and for the whole server work in every case.
 
 If the server is reachable beyond your local network, serve it over HTTPS
 (passwords cross the network in clear on plain HTTP). Caddy needs no extra

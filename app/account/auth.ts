@@ -15,7 +15,7 @@ const MAX_HASHING = 8;
 let hashing = 0;
 
 const derive = async (password: string, salt: Buffer, params: { N: number; r: number; p: number }) => {
-  if (hashing >= MAX_HASHING) throw new ApiFailure("too-many-attempts", 429);
+  if (hashing >= MAX_HASHING) throw new ApiFailure("server-busy", 503);
   hashing++;
   try {
     return await new Promise<Buffer>((resolve, reject) =>
@@ -45,12 +45,14 @@ export const verifyPassword = async (password: string, stored: StoredPassword) =
 export const isOutdatedHash = (stored: StoredPassword) =>
   stored.N !== SCRYPT.N || stored.r !== SCRYPT.r || stored.p !== SCRYPT.p;
 
-// Checked when the pseudo is unknown, so a log-in takes as long either way
-let dummyPassword: Promise<StoredPassword> | null = null;
-export const burnPasswordCheck = async (password: string) => {
-  dummyPassword ??= hashPassword(randomBytes(16).toString("hex"));
-  await verifyPassword(password, await dummyPassword);
+// Checked when the pseudo is unknown, so a log-in takes as long either way. Random
+// bytes, not a real hash: nothing to compute first, and no password matches it.
+const DUMMY_PASSWORD: StoredPassword = {
+  ...SCRYPT,
+  salt: randomBytes(16).toString("base64"),
+  hash: randomBytes(KEY_LENGTH).toString("base64"),
 };
+export const burnPasswordCheck = (password: string) => verifyPassword(password, DUMMY_PASSWORD);
 
 // --- Sessions ---
 
@@ -186,7 +188,10 @@ export const isCrossSite = (req: NextRequest) => {
 
 /** Address of the client, best effort: MORPION_IP_HEADER names a header set by the
  * proxy (e.g. cf-connecting-ip), else the last X-Forwarded-For entry, the one added
- * by the closest proxy (or by Next.js itself, from the connection). */
+ * by the closest proxy. Next.js only fills X-Forwarded-For from the connection when
+ * the request has none: without a proxy in front, a client can pick its own address,
+ * so the per-address limits only hold behind a proxy (the per-account and
+ * server-wide ones always do). */
 export const clientIp = (req: NextRequest) => {
   const named = process.env.MORPION_IP_HEADER;
   const value = named ? req.headers.get(named) : req.headers.get("x-forwarded-for");
@@ -195,6 +200,8 @@ export const clientIp = (req: NextRequest) => {
 
 const LONGEST_WINDOW_MS = 60 * 60_000;
 const MAX_LIMIT_KEYS = 50_000;
+export const SIGNUP_SERVER_KEY = "signup:server";
+const ACCOUNT_KEY_PREFIX = "pwa:";
 
 const limits = globalThis as typeof globalThis & {
   morpionAttempts?: Map<string, number[]>;
@@ -221,14 +228,17 @@ export const isLimited = (key: string, max: number, windowMs: number) =>
 export const countAttempt = (key: string) => {
   const now = Date.now();
   attempts.set(key, [...recent(key, LONGEST_WINDOW_MS, now), now]);
-  // Flooded with keys (e.g. made-up addresses): forget the oldest ones
-  if (attempts.size > MAX_LIMIT_KEYS) {
-    const extra = attempts.size - MAX_LIMIT_KEYS / 2;
-    let i = 0;
-    for (const key of attempts.keys()) {
-      if (i++ >= extra) break;
-      attempts.delete(key);
-    }
+  if (attempts.size <= MAX_LIMIT_KEYS) return;
+  // Flooded with keys (e.g. made-up addresses): forget the finished counters, then the
+  // oldest ones, except those of real accounts and the server-wide one, so a flood
+  // never resets the limit of an account under attack
+  for (const [k, times] of attempts) {
+    if (times.every((t) => now - t >= LONGEST_WINDOW_MS)) attempts.delete(k);
+  }
+  const accountKeys = new Set(db().users.map((u) => `${ACCOUNT_KEY_PREFIX}${u.pseudoKey}`));
+  for (const k of attempts.keys()) {
+    if (attempts.size <= MAX_LIMIT_KEYS / 2) break;
+    if (k !== SIGNUP_SERVER_KEY && !accountKeys.has(k)) attempts.delete(k);
   }
 };
 
@@ -237,9 +247,9 @@ export const countAttempt = (key: string) => {
 export const PASSWORD_FAILURES = { account: 30, addressAccount: 10, address: 50, windowMs: 15 * 60_000 };
 
 const failureKeys = (req: NextRequest, key: string) => ({
-  account: `pw:${key}`,
-  addressAccount: `pw:${clientIp(req)}:${key}`,
-  address: `pw-ip:${clientIp(req)}`,
+  account: `${ACCOUNT_KEY_PREFIX}${key}`,
+  addressAccount: `pwia:${clientIp(req)}|${key}`,
+  address: `pwi:${clientIp(req)}`,
 });
 
 /** Too many wrong passwords for this account (key = pseudoKey) or from this address */

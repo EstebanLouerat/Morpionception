@@ -16,7 +16,8 @@ export type GameState = {
   activeBoard: number | null;
 };
 
-export type OutcomeReason = "line" | "draw" | "timeout" | "resign";
+/** claim: online, the other player stayed offline too long and the win was claimed */
+export type OutcomeReason = "line" | "draw" | "timeout" | "resign" | "claim";
 /** How a game ended, null while it goes on (winner is null for a draw) */
 export type Outcome = { winner: Side | null; reason: OutcomeReason } | null;
 

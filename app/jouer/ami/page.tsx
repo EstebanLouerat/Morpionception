@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import styles from "./Ami.module.css";
 import ui from "../../ui/common.module.css";
 import PageShell from "../../ui/PageShell";
@@ -50,9 +50,8 @@ const clockLabel = (seconds: number) =>
 // or, for the player who created the room, the waiting room is shown again.
 export default function JouerAmi() {
   const router = useRouter();
-  const [urlCode] = useState(() =>
-    cleanCode(new URLSearchParams(window.location.search).get("code") ?? "")
-  );
+  const params = useSearchParams();
+  const [urlCode] = useState(() => cleanCode(params.get("code") ?? ""));
 
   // Our seat in a room whose game has not started yet
   const [seat, setSeat] = useState<{ code: string; you: Side } | null>(null);

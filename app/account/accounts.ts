@@ -31,7 +31,7 @@ import {
   type GameResult,
   type PublicProfile,
 } from "./protocol";
-import { db, findUser, findUserByKey, save, type StoredUser } from "./store";
+import { db, findUser, findUserByKey, save, type StoredPassword, type StoredUser } from "./store";
 
 const MAX_RECENT_GAMES = 20;
 // Accounts the server accepts in total (MORPION_MAX_ACCOUNTS to change it)
@@ -45,6 +45,8 @@ const STATUS: Record<AccountError, number> = {
   "invalid-password": 400,
   "pseudo-taken": 409,
   "too-many-attempts": 429,
+  "too-many-signups": 429,
+  "server-busy": 503,
   "accounts-full": 503,
   "storage-unavailable": 503,
   "forbidden-origin": 403,
@@ -86,6 +88,9 @@ export const accountView = (user: StoredUser): AccountView => ({
   stats: user.stats,
   recent: user.recent.map(({ opponentId, ...game }) => ({ ...game, opponent: opponentOf(opponentId) })),
 });
+
+/** Same password hash (compared by value: the data may have been reloaded from disk) */
+const samePassword = (a: StoredPassword, b: StoredPassword) => a.hash === b.hash && a.salt === b.salt;
 
 const pick = <T>(list: readonly T[]) => list[Math.floor(Math.random() * list.length)];
 
@@ -145,11 +150,11 @@ export const login = async (req: NextRequest, body: unknown) => {
   }
   // Deleted or password changed while checking: the old password no longer opens it
   const current = findUser(user.id);
-  if (!current || current.password !== checked) return null;
+  if (!current || !samePassword(current.password, checked)) return null;
   if (isOutdatedHash(checked)) {
     const rehashed = await hashPassword(password);
     const now = findUser(user.id);
-    if (!now || now.password !== checked) return null;
+    if (!now || !samePassword(now.password, checked)) return null;
     now.password = rehashed;
     save();
     return now;
@@ -168,7 +173,7 @@ const confirmPassword = async (req: NextRequest, user: StoredUser, password: unk
   }
   const current = findUser(user.id);
   if (!current) return fail("unauthorized");
-  if (current.password !== checked) return fail("bad-credentials");
+  if (!samePassword(current.password, checked)) return fail("bad-credentials");
   return current;
 };
 
@@ -198,7 +203,7 @@ export const changePassword = async (req: NextRequest, user: StoredUser, body: u
   const hashed = await hashPassword(next as string);
   // Looked up again after the hash: changed or deleted meanwhile?
   const now = findUser(user.id) ?? fail("unauthorized");
-  if (now.password !== checked) fail("bad-credentials");
+  if (!samePassword(now.password, checked)) fail("bad-credentials");
   now.password = hashed;
   return now;
 };

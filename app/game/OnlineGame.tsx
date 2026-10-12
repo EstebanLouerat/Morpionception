@@ -14,6 +14,7 @@ import { applyMove, otherSide, type Clocks, type GameState } from "./rules";
 import { getRoomToken, joinRoom, leaveRoom, sendAction } from "../online/client";
 import { CLAIM_AFTER_MS, ERROR_MESSAGES, type RoomView } from "../online/protocol";
 import { useRoom } from "../online/useRoom";
+import { useAccount } from "../account/client";
 
 // A confirmation button goes back to normal after this delay
 const CONFIRM_MS = 3000;
@@ -32,8 +33,8 @@ export default function OnlineGame({ code }: { code: string }) {
     if (!hasSeat || waiting) router.replace(`/jouer/ami?code=${code}`);
   }, [hasSeat, waiting, code, router]);
 
-  // Taking the seat again lets an account logged in since then play this room
-  // (from the next round if this one has started)
+  // Taking the seat again lets an account logged in since then play this room, if
+  // the round has not started (OnlineBoard tries again when a new round starts)
   useEffect(() => {
     if (hasSeat) joinRoom(code);
   }, [hasSeat, code]);
@@ -78,6 +79,14 @@ const OnlineBoard = ({ code, view, receivedAt, connected }: OnlineBoardProps) =>
   // or agreement ("À Léa de jouer", "Léa est hors ligne").
   const friendName = them.profile?.pseudo ?? "Ton ami";
   const friendInSentence = them.profile?.pseudo ?? "ton ami";
+  const account = useAccount();
+  const loggedInAsGuest = account.status === "user" && !me.profile;
+
+  // Logged in since joining: a new round lets the account play (the server only
+  // takes it before the first move of a round)
+  useEffect(() => {
+    if (loggedInAsGuest && view.moves === 0) joinRoom(code);
+  }, [loggedInAsGuest, view.round, view.moves, code]);
 
   // Our move is shown at once, until the server sends it back (or refuses it)
   const [pending, setPending] = useState<{ round: number; moves: number; state: GameState } | null>(
@@ -150,6 +159,10 @@ const OnlineBoard = ({ code, view, receivedAt, connected }: OnlineBoardProps) =>
     const won = outcome.winner === you;
     if (outcome.reason === "timeout") {
       endTitle = won ? "Tu as gagné au temps !" : `${friendName} a gagné au temps !`;
+    } else if (outcome.reason === "claim") {
+      endTitle = won
+        ? "Victoire par forfait !"
+        : "Défaite par forfait : plus de 2 minutes hors ligne.";
     } else if (outcome.reason === "resign") {
       endTitle = !won
         ? "Tu as abandonné."
@@ -168,7 +181,9 @@ const OnlineBoard = ({ code, view, receivedAt, connected }: OnlineBoardProps) =>
   else if (friendAway) notice = `${friendName} est hors ligne, attends son retour…`;
 
   // Whether this game went into the stats, said once it is over
-  const statsNote = !me.profile
+  const statsNote = loggedInAsGuest
+    ? "Tu as rejoint ce salon en invité : partie non comptée."
+    : !me.profile
     ? "Crée un compte pour garder tes statistiques."
     : view.recorded
     ? "Partie comptée dans tes statistiques."
@@ -196,7 +211,9 @@ const OnlineBoard = ({ code, view, receivedAt, connected }: OnlineBoardProps) =>
       canPlay={canPlay}
       onPlay={play}
       settingsHref={`/parametres?from=game&room=${code}`}
-      playerStatus={them.left ? { [friend]: "A quitté" } : !them.online ? { [friend]: "Hors ligne" } : {}}
+      playerStatus={
+        them.left ? { [friend]: "A quitté" } : !them.online ? { [friend]: "Hors ligne" } : {}
+      }
       announcement={
         outcome
           ? endTitle

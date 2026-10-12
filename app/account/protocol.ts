@@ -48,6 +48,8 @@ export type AccountError =
   | "invalid-password"
   | "pseudo-taken"
   | "too-many-attempts"
+  | "too-many-signups"
+  | "server-busy"
   | "accounts-full"
   | "storage-unavailable"
   | "forbidden-origin"
@@ -61,6 +63,8 @@ export const ACCOUNT_ERROR_MESSAGES: Record<AccountError, string> = {
   "invalid-password": "Ce mot de passe n'est pas valide.",
   "pseudo-taken": "Ce pseudo est déjà pris.",
   "too-many-attempts": "Trop de tentatives, réessaie dans 15 minutes.",
+  "too-many-signups": "Trop de comptes créés récemment, réessaie dans une heure.",
+  "server-busy": "Le serveur est occupé, réessaie dans un instant.",
   "accounts-full": "Le serveur n'accepte plus de nouveaux comptes pour l'instant.",
   "storage-unavailable": "Les comptes sont indisponibles pour l'instant, réessaie plus tard.",
   "forbidden-origin": "Requête refusée.",

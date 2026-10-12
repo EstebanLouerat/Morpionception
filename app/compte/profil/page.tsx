@@ -14,6 +14,7 @@ import PasswordField from "../PasswordField";
 import {
   changePassword,
   deleteAccount,
+  refreshAccount,
   updateProfile,
   useAccount,
 } from "../../account/client";
@@ -47,10 +48,16 @@ export default function Profil() {
   const router = useRouter();
   const account = useAccount();
 
-  // Guests have nothing to edit (also right after deleting the account)
   useEffect(() => {
-    if (account.status === "guest") router.replace("/compte");
-  }, [account.status, router]);
+    refreshAccount();
+  }, []);
+  // Guests have nothing to edit (also right after deleting the account). When the
+  // session expired here, logging in again comes back to this page.
+  const expired = account.status === "guest" && account.expired;
+  useEffect(() => {
+    if (account.status === "guest")
+      router.replace(expired ? `/compte?retour=${encodeURIComponent("/compte/profil")}` : "/compte");
+  }, [account.status, expired, router]);
 
   return (
     <PageShell title="Profil" backHref="/compte">

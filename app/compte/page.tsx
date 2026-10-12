@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import styles from "./Compte.module.css";
 import ui from "../ui/common.module.css";
 import PageShell from "../ui/PageShell";
@@ -10,7 +10,7 @@ import Loader from "../ui/Loader";
 import { Button, ButtonLink } from "../ui/Button";
 import Avatar from "../account/Avatar";
 import { logout, refreshAccount, safeReturnPath, useAccount } from "../account/client";
-import type { AccountView } from "../account/protocol";
+import { ACCOUNT_ERROR_MESSAGES, type AccountView } from "../account/protocol";
 import AuthForm from "./AuthForm";
 import StatsPanel from "./StatsPanel";
 import RecentGames from "./RecentGames";
@@ -20,9 +20,12 @@ import { monthYear } from "./format";
 export default function Compte() {
   const router = useRouter();
   const account = useAccount();
-  const [returnTo] = useState(() =>
-    safeReturnPath(new URLSearchParams(window.location.search).get("retour"))
-  );
+  const params = useSearchParams();
+  const [returnTo] = useState(() => safeReturnPath(params.get("retour")));
+  // Fresh stats when coming back from a game
+  useEffect(() => {
+    refreshAccount();
+  }, []);
 
   return (
     <PageShell title="Compte" backHref={returnTo ?? "/"}>
@@ -51,6 +54,11 @@ export default function Compte() {
               </div>
             </div>
           </section>
+          {account.expired && (
+            <p className={styles.error} role="alert">
+              {ACCOUNT_ERROR_MESSAGES.unauthorized}
+            </p>
+          )}
           <AuthForm onDone={() => returnTo && router.replace(returnTo)} />
         </>
       )}

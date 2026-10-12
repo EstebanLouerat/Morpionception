@@ -8,7 +8,8 @@ export type AccountState =
   | { status: "loading"; account: null }
   /** The server could not be reached to know who is logged in */
   | { status: "error"; account: null }
-  | { status: "guest"; account: null }
+  /** expired: the session ended while using the site (logged out elsewhere) */
+  | { status: "guest"; account: null; expired?: boolean }
   | { status: "user"; account: AccountView };
 
 const LOADING: AccountState = { status: "loading", account: null };
@@ -22,8 +23,8 @@ let pending: Promise<void> | null = null;
 let version = 0;
 const listeners = new Set<() => void>();
 
-const setAccount = (account: AccountView | null) => {
-  state = account ? { status: "user", account } : { status: "guest", account: null };
+const setAccount = (account: AccountView | null, expired = false) => {
+  state = account ? { status: "user", account } : { status: "guest", account: null, expired };
   loadedAt = Date.now();
   version++;
   listeners.forEach((l) => l());
@@ -36,7 +37,9 @@ export const refreshAccount = () => {
     .then((res) => {
       // A log-in or log-out answered meanwhile knows better
       if (version !== startedAt) return;
-      if (res.ok) setAccount(res.data.account);
+      // Still logged out after an expired session: keep saying why
+      const stillExpired = state.status === "guest" && !!state.expired;
+      if (res.ok) setAccount(res.data.account, !res.data.account && stillExpired);
       else if (state.status === "loading") {
         // Nothing known yet (a failed reload later on keeps what was known)
         state = { status: "error", account: null };
@@ -82,7 +85,7 @@ const call = async <T>(
   const res = await request<T, AccountError>(method, path, body);
   if (res.ok) apply?.(res.data);
   // The session ended meanwhile (logged out elsewhere, password changed)
-  else if (res.error === "unauthorized") setAccount(null);
+  else if (res.error === "unauthorized") setAccount(null, true);
   return res;
 };
 
@@ -108,6 +111,15 @@ export const changePassword = (current: string, next: string) =>
 export const deleteAccount = (password: string) =>
   call<{ ok: true }>("POST", "/api/account/delete", { password }, () => setAccount(null));
 
-/** Where to go back after logging in (?retour=…): only a path of this site */
-export const safeReturnPath = (raw: string | null) =>
-  raw && raw.startsWith("/") && !raw.startsWith("//") && !raw.includes("\\") ? raw : null;
+/** Where to go back after logging in (?retour=…): only a page of this site. The value
+ * is resolved like the browser would ("/\t/evil.example" is another site once the tab
+ * is dropped), and refused if it lands anywhere else. */
+export const safeReturnPath = (raw: string | null) => {
+  if (!raw || !raw.startsWith("/") || /[\u0000-\u001F\u007F\\]/.test(raw)) return null;
+  try {
+    const url = new URL(raw, window.location.origin);
+    return url.origin === window.location.origin ? url.pathname + url.search + url.hash : null;
+  } catch {
+    return null;
+  }
+};

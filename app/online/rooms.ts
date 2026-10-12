@@ -296,6 +296,8 @@ export const performAction = (
     const seat = newSeat(userId);
     room.seats[free] = seat;
     broadcast(room);
+    // If their page never opens, the other player sees them offline after the grace delay
+    setTimeout(() => rooms.get(room.code) === room && broadcast(room), OFFLINE_GRACE_MS + 50);
     return { code, token: seat.token, you: free };
   }
 
@@ -327,7 +329,8 @@ export const performAction = (
       if (!opponent) fail("waiting");
       settleClock(room, now);
       // Giving up while the other player is away is not a loss
-      endGame(room, { winner: otherSide(side), reason: "resign" }, offlineFor(room, opponent!, now) === null);
+      const opponentHere = offlineFor(room, opponent!, now) === null;
+      endGame(room, { winner: otherSide(side), reason: "resign" }, opponentHere);
       break;
     }
     case "claim": {
@@ -336,7 +339,7 @@ export const performAction = (
       if (room.outcome) fail("game-over");
       if ((offlineFor(room, opponent!, now) ?? 0) < CLAIM_AFTER_MS) fail("not-claimable");
       settleClock(room, now);
-      endGame(room, { winner: side, reason: "resign" });
+      endGame(room, { winner: side, reason: "claim" });
       break;
     }
     case "rematch": {
@@ -368,7 +371,8 @@ export const performAction = (
       seat.rematch = false;
       // Leaving a game in progress gives it up, without a loss if the other player is away
       settleClock(room, now);
-      endGame(room, { winner: otherSide(side), reason: "resign" }, offlineFor(room, opponent, now) === null);
+      const opponentHere = offlineFor(room, opponent, now) === null;
+      endGame(room, { winner: otherSide(side), reason: "resign" }, opponentHere);
       break;
     }
     default:

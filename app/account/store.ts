@@ -8,7 +8,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { ApiFailure } from "../lib/api";
 import { emptyStats, type GameRecord, type Stats } from "./protocol";
-import type { AvatarId, ColorId } from "./profile";
+import { pseudoKey, type AvatarId, type ColorId } from "./profile";
 
 /** scrypt hash, with the settings it was made with */
 export type StoredPassword = { N: number; r: number; p: number; salt: string; hash: string };
@@ -56,9 +56,11 @@ const cache = globalThis as typeof globalThis & {
 
 const unavailable = () => new ApiFailure("storage-unavailable", 503);
 
-/** Fills what an older file may lack (counters added later would be undefined) */
+/** Fills what an older file may lack (counters added later would be undefined) and
+ * computes the keys again, in case the way they are made has changed */
 const normalize = (data: Data): Data => {
   for (const user of data.users) {
+    user.pseudoKey = pseudoKey(user.pseudo);
     const stats = emptyStats();
     user.stats = {
       ...stats,
@@ -77,15 +79,20 @@ const load = (): Data => {
   try {
     text = fs.readFileSync(file, "utf8");
   } catch (e) {
-    if ((e as NodeJS.ErrnoException).code === "ENOENT") return { version: 1, users: [], sessions: [] };
+    if ((e as NodeJS.ErrnoException).code === "ENOENT") {
+      cache.morpionAccountsReadOnly = false;
+      return { version: 1, users: [], sessions: [] };
+    }
     // Permissions, too many open files…: try again at the next request
     console.error(`Comptes : impossible de lire ${file}`, e);
     throw unavailable();
   }
   try {
     const parsed = JSON.parse(text);
-    if (parsed?.version === 1 && Array.isArray(parsed.users) && Array.isArray(parsed.sessions))
+    if (parsed?.version === 1 && Array.isArray(parsed.users) && Array.isArray(parsed.sessions)) {
+      cache.morpionAccountsReadOnly = false;
       return normalize(parsed);
+    }
     throw new Error("contenu inattendu");
   } catch (e) {
     // Corrupt file: never overwrite it, move it aside and start over
@@ -93,6 +100,7 @@ const load = (): Data => {
     console.error(`Comptes : ${file} illisible, déplacé vers ${aside}`, e);
     try {
       fs.renameSync(file, aside);
+      cache.morpionAccountsReadOnly = false;
     } catch (moveError) {
       console.error("Comptes : impossible de déplacer le fichier, comptes en lecture seule", moveError);
       cache.morpionAccountsReadOnly = true;

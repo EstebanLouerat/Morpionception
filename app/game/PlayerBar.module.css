@@ -124,6 +124,9 @@
   font-weight: 800;
 }
 .vs small {
+  max-width: 6.5rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
   font-size: 0.7rem;
   font-weight: 600;
   white-space: nowrap;

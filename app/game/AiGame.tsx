@@ -7,7 +7,7 @@ import { Button, ButtonLink } from "../ui/Button";
 import GameScreen from "./GameScreen";
 import { getMode } from "./modes";
 import { getSideSettings } from "./side";
-import { GAME_STORAGE_KEY } from "./savedGame";
+import { gameStorageKey } from "./savedGame";
 import {
   applyMove,
   getBoardOutcome,
@@ -49,7 +49,7 @@ const newGameSave = (level: Level = getAiSettings().level): AiGameSave => ({
 
 const loadSave = (): AiGameSave | null => {
   try {
-    const saved = JSON.parse(localStorage.getItem(GAME_STORAGE_KEY) ?? "null");
+    const saved = JSON.parse(localStorage.getItem(gameStorageKey("ai")) ?? "null");
     if (saved?.mode !== "ai" || !Array.isArray(saved.superBoard)) return null;
     const fresh = newGameState();
     return {
@@ -79,11 +79,11 @@ export default function AiGame() {
   const result = outcome ? (outcome.winner ?? "draw") : null;
   const aiTurn = !outcome && game.currentPlayer === ai;
 
-  // Saved like the local games (board fields at the top, see savedGame.ts)
+  // Saved like the local games (board fields at the top, see savedGame.ts), in its own slot
   useEffect(() => {
     const { game: board, ...rest } = save;
     localStorage.setItem(
-      GAME_STORAGE_KEY,
+      gameStorageKey("ai"),
       JSON.stringify({ mode: "ai", over: !!result, ...board, ...rest })
     );
   }, [save, result]);
@@ -117,6 +117,7 @@ export default function AiGame() {
     return () => {
       cancelled = true;
       clearTimeout(timer);
+      aiPlayer.current?.cancel();
     };
   }, [aiTurn, game, level]);
 
@@ -138,13 +139,11 @@ export default function AiGame() {
     );
   const restart = () => setSave(newGameSave(level));
 
+  // Short names for the chips (phones), the level goes under "VS"
   const mode = {
     ...getMode("ai"),
-    name: `IA ${levelLabel(level)}`,
-    players:
-      you === "X"
-        ? { X: "Toi", O: `IA ${levelLabel(level)}` }
-        : { X: `IA ${levelLabel(level)}`, O: "Toi" },
+    name: levelLabel(level),
+    players: you === "X" ? { X: "Toi", O: "IA" } : { X: "IA", O: "Toi" },
   };
   const endTitle = !outcome?.winner
     ? "Égalité !"
@@ -194,13 +193,9 @@ export default function AiGame() {
           <p className={styles.modalNote}>Niveau {levelLabel(level)}</p>
           <div className={styles.modalBtns}>
             <Button onClick={restart}>Rejouer</Button>
-            <Button
-              variant="secondary"
-              onClick={() => {
-                restart();
-                router.push("/jouer");
-              }}
-            >
+            {/* The finished game stays saved as over: nothing to resume, and a new game
+                would let the AI play its first move while the page changes */}
+            <Button variant="secondary" onClick={() => router.push("/jouer")}>
               Quitter
             </Button>
           </div>

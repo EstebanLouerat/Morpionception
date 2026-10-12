@@ -3,7 +3,7 @@ import { chooseMove, type Level } from "./engine";
 import type { GameState } from "../game/rules";
 
 export type AiRequest = { id: number; game: GameState; level: Level };
-export type AiResponse = { id: number; board: number; cell: number };
+export type AiResponse = { id: number; board: number; cell: number } | { id: number; error: string };
 
 const worker = self as unknown as {
   onmessage: (e: MessageEvent<AiRequest>) => void;
@@ -11,6 +11,11 @@ const worker = self as unknown as {
 };
 
 worker.onmessage = ({ data: { id, game, level } }) => {
-  const { board, cell } = chooseMove(game, level);
-  worker.postMessage({ id, board, cell });
+  try {
+    const { board, cell } = chooseMove(game, level);
+    worker.postMessage({ id, board, cell });
+  } catch (e) {
+    // The page then thinks on its own
+    worker.postMessage({ id, error: String(e) });
+  }
 };

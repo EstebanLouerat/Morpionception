@@ -155,10 +155,22 @@ class Node {
   }
 }
 
+/** Moves searched from a position: a move that wins the game is the only one worth
+ * trying (as in the random games), so a move allowing it is known to lose at once */
 const movesOf = (s: EngineState, buffer: Uint8Array) => {
   // A game already decided has no moves
   if (result(s) !== ONGOING) return [];
-  return Array.from(buffer.subarray(0, legalMoves(s, buffer)));
+  const n = legalMoves(s, buffer);
+  const win = winningMove(s, buffer, n);
+  return win >= 0 ? [win] : Array.from(buffer.subarray(0, n));
+};
+
+/** The opponent could win the game right after this move */
+const givesWin = (s: EngineState, move: number, scratch: EngineState, buffer: Uint8Array) => {
+  copyInto(s, scratch);
+  play(scratch, move);
+  if (result(scratch) !== ONGOING) return false;
+  return winningMove(scratch, buffer, legalMoves(scratch, buffer)) >= 0;
 };
 
 /** Plays random moves to the end of the game, taking a winning move when there is one */
@@ -192,17 +204,19 @@ export const search = (root: EngineState, limits: SearchLimits): SearchResult =>
   const rng = limits.rng ?? Math.random;
   const exploration = limits.exploration ?? 1.0;
   const buffer = new Uint8Array(81);
-  const rootMoves = movesOf(root, buffer);
+  const state = copyState(root);
+  let rootMoves = movesOf(root, buffer);
   if (!rootMoves.length) throw new Error("No move: the game is over");
+  // Never hand over a win in one move when another move avoids it, even in a lost
+  // position: the player should have to find the longer win
+  const safe = rootMoves.filter((m) => !givesWin(root, m, state, buffer));
+  if (safe.length) rootMoves = safe;
 
-  // Obvious cases need no search
-  const n = legalMoves(root, buffer);
-  const win = winningMove(root, buffer, n);
-  if (win >= 0 || rootMoves.length === 1)
-    return { move: win >= 0 ? win : rootMoves[0], iterations: 0, ms: now() - started, winRate: 1 };
+  // Obvious cases need no search (a single move is also the winning one, see movesOf)
+  if (rootMoves.length === 1)
+    return { move: rootMoves[0], iterations: 0, ms: now() - started, winRate: 1 };
 
   const tree = new Node(-1, null, (1 - root.turn) as Player, rootMoves);
-  const state = copyState(root);
   const maxIterations = limits.iterations ?? Infinity;
   const deadline = limits.timeMs !== undefined ? started + limits.timeMs : Infinity;
   let iterations = 0;

@@ -53,7 +53,7 @@ export default function Partie() {
         size="lg"
         fullWidth
         onClick={() => {
-          clearSavedGame();
+          clearSavedGame(mode.id);
           router.push(gameHref);
         }}
       >

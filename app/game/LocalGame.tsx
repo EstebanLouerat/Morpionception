@@ -7,7 +7,7 @@ import { Button, ButtonLink } from "../ui/Button";
 import GameScreen from "./GameScreen";
 import { getMode, type ModeId } from "./modes";
 import { getClockSettings } from "./clock";
-import { GAME_STORAGE_KEY } from "./savedGame";
+import { gameStorageKey } from "./savedGame";
 import {
   applyMove,
   fullClocks,
@@ -24,7 +24,7 @@ type SavedGame = { game: GameState; clockLimit: number; clocks: Clocks };
 
 /** The saved game, if it is one of this mode (games saved before modes were local) */
 const loadSavedGame = (mode: ModeId): SavedGame | null => {
-  const saved = localStorage.getItem(GAME_STORAGE_KEY);
+  const saved = localStorage.getItem(gameStorageKey(mode));
   if (!saved) return null;
   try {
     const parsed = JSON.parse(saved);
@@ -79,14 +79,14 @@ export default function LocalGame() {
 
   useEffect(() => {
     const gameState = { mode: mode.id, over: gameOver, ...game, clockLimit, clocks };
-    localStorage.setItem(GAME_STORAGE_KEY, JSON.stringify(gameState));
+    localStorage.setItem(gameStorageKey(mode.id), JSON.stringify(gameState));
   }, [mode.id, gameOver, game, clockLimit, clocks]);
 
   const resetGame = () => {
     setGame(newGameState());
     // Same chrono as the game that ends
     setClocks(fullClocks(clockLimit));
-    localStorage.removeItem(GAME_STORAGE_KEY);
+    localStorage.removeItem(gameStorageKey(mode.id));
   };
 
   // Count down the clock of the player to move

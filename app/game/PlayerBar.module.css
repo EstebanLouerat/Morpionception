@@ -25,6 +25,7 @@
 }
 
 .symbol {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -38,6 +39,17 @@
 }
 .x .symbol {
   background: var(--primary-x);
+}
+/* On the outer corner of the symbol: takes no room from the name on small screens */
+.avatarBadge {
+  position: absolute;
+  left: -8px;
+  bottom: -8px;
+  box-shadow: 0 0 0 2px var(--surface);
+}
+.o .avatarBadge {
+  left: auto;
+  right: -8px;
 }
 .o .symbol {
   background: var(--primary-o);

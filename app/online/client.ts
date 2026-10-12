@@ -1,5 +1,6 @@
 // Calls to the rooms API from the browser, and the seat tokens of the rooms joined.
 import type { SideChoice } from "../game/side";
+import { request } from "../lib/request";
 import type { JoinResponse, RoomAction, RoomError } from "./protocol";
 
 // Seat token per room code, so a refresh or a new tab gets the same seat back
@@ -41,22 +42,8 @@ export const forgetRoomToken = (code: string) => {
   writeTokens(tokens);
 };
 
-export type ApiResult<T> = { ok: true; data: T } | { ok: false; error: RoomError };
-
-const post = async <T>(path: string, body: unknown, keepalive = false): Promise<ApiResult<T>> => {
-  try {
-    const res = await fetch(path, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-      keepalive,
-    });
-    const json = await res.json();
-    return res.ok ? { ok: true, data: json } : { ok: false, error: json.error ?? "network" };
-  } catch {
-    return { ok: false, error: "network" };
-  }
-};
+const post = <T>(path: string, body: unknown, keepalive = false) =>
+  request<T, RoomError>("POST", path, body, keepalive);
 
 export const createRoom = async (side: SideChoice, clock: number) => {
   const res = await post<JoinResponse>("/api/rooms", { side, clock });

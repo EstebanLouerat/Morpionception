@@ -3,7 +3,7 @@
   align-items: center;
   gap: 1rem;
 }
-.avatar {
+.guestAvatar {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -14,16 +14,116 @@
   background: var(--surface-hover);
   color: var(--text-muted);
 }
+.identity {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
 .name {
   display: block;
   margin-bottom: 0.25rem;
   font-size: 1.3rem;
+  overflow-wrap: anywhere;
+}
+
+/* --- Forms --- */
+.tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 14px;
+  background: var(--surface-hover);
+}
+.tab {
+  padding: 0.65rem 0.25rem;
+  border-radius: 10px;
+  font-weight: 700;
+  color: var(--text-muted);
+  transition: background 0.2s, color 0.2s;
+}
+.tab[aria-selected="true"] {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 2px 6px var(--shadow);
+}
+.tab:focus-visible {
+  outline: 3px solid var(--primary-x);
+  outline-offset: 2px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.fieldLabel {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.password {
+  position: relative;
+}
+/* input.… beats the shared .input rule whatever the CSS load order */
+input.passwordInput {
+  padding-right: 3.25rem;
+}
+.reveal {
+  position: absolute;
+  top: 50%;
+  right: 0.4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 10px;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+}
+.reveal:focus-visible {
+  outline: 3px solid var(--primary-x);
+}
+
+.hint {
+  font-size: 0.85rem;
+}
+.error {
+  color: #e5484d;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+.success {
+  color: #16a085;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+/* --- Stats --- */
+.sectionHeader {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.75rem;
+}
+.sectionNote {
+  font-size: 0.85rem;
+  color: var(--text-muted);
 }
 
 .stats {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 0.75rem;
+}
+@media (max-width: 480px) {
+  .stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 .stat {
   display: flex;
@@ -34,20 +134,139 @@
   border-radius: 14px;
   background: var(--surface);
   box-shadow: 0 3px 10px var(--shadow);
+  text-align: center;
 }
 .statValue {
   font-size: 1.6rem;
   font-weight: 800;
   color: var(--primary-x);
+  font-variant-numeric: tabular-nums;
 }
 .statLabel {
   font-size: 0.8rem;
   color: var(--text-muted);
 }
 
-.fieldLabel {
-  margin-bottom: -0.5rem;
-  font-size: 0.85rem;
+.resultsBar {
+  display: flex;
+  gap: 3px;
+  height: 14px;
+  overflow: hidden;
+  border-radius: 999px;
+}
+.resultsBar > span {
+  flex-basis: 0;
+}
+.barWin {
+  background: #16a085;
+}
+.barDraw {
+  background: var(--primary-draw);
+}
+.barLoss {
+  background: #e5484d;
+}
+.legend {
+  margin-top: -0.5rem;
   font-weight: 700;
+}
+.win {
+  color: #16a085;
+}
+.draw {
+  color: var(--primary-draw-dark);
+}
+.loss {
+  color: #e5484d;
+}
+
+.soon {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-size: 0.9rem;
   color: var(--text-muted);
+}
+
+/* --- Recent games --- */
+.empty {
+  align-items: center;
+  text-align: center;
+}
+.games {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: 0 4px 12px var(--shadow);
+  list-style: none;
+}
+.game {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+}
+.game + .game {
+  border-top: 1px solid var(--border);
+}
+.result {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: var(--surface-muted);
+  font-weight: 800;
+}
+.gameMain {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+.gameMain small {
+  font-size: 0.8rem;
+}
+.opponent {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+.opponentName {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.anonymous {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--surface-hover);
+  color: var(--text-muted);
+}
+.when {
+  flex-shrink: 0;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  text-align: right;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }

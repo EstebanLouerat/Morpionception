@@ -8,6 +8,7 @@ import { playFx } from "../audio/engine";
 import { IconLink } from "../ui/Button";
 import PlayerBar from "./PlayerBar";
 import type { GameMode } from "./modes";
+import type { PublicProfile } from "../account/protocol";
 import {
   getClosedBoards,
   getForcedBoard,
@@ -69,6 +70,8 @@ type GameScreenProps = {
   playerStatus?: Partial<Record<Side, string>>;
   /** Screen reader announcement, instead of the one built from the names */
   announcement?: string;
+  /** Profiles of logged-in players (online), shown as avatars */
+  profiles?: Partial<Record<Side, PublicProfile | null>>;
   /** Message under the players (e.g. connection lost) */
   notice?: ReactNode;
   /** Buttons of the control panel, with the ctrlBtn class */
@@ -89,6 +92,7 @@ export default function GameScreen({
   settingsHref,
   playerStatus,
   announcement,
+  profiles,
   notice,
   controls,
   endModal,
@@ -258,6 +262,7 @@ export default function GameScreen({
           timedOut={timedOut}
           status={playerStatus}
           announcement={announcement}
+          profiles={profiles}
         />
         {notice && (
           <p className={styles.notice} role="status">

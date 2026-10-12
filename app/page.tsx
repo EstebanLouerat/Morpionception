@@ -2,6 +2,7 @@
 
 import styles from "./Home.module.css";
 import { ButtonLink, IconLink } from "./ui/Button";
+import AccountLink from "./account/AccountLink";
 
 export default function Home() {
   return (
@@ -9,7 +10,7 @@ export default function Home() {
       <div className={styles.animatedBackground} aria-hidden="true" />
 
       <header className={styles.topBar}>
-        <IconLink href="/compte" icon="user" label="Compte" />
+        <AccountLink />
         <div className={styles.topBarRight}>
           <IconLink href="/amis" icon="users" label="Amis" />
           <IconLink href="/parametres" icon="gear" label="Paramètres" />

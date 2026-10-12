@@ -2,7 +2,7 @@
 
 import styles from "./Game.module.css";
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button, ButtonLink } from "../ui/Button";
 import GameScreen from "./GameScreen";
 import { getMode } from "./modes";
@@ -48,10 +48,9 @@ const loadSavedGame = (): SavedGame | null => {
 /** Game on this device: both players share the screen */
 export default function LocalGame() {
   const router = useRouter();
+  const params = useSearchParams();
   // Mode from /game?mode=… (only playable modes, see modes.ts)
-  const [mode] = useState(() =>
-    getMode(new URLSearchParams(window.location.search).get("mode"))
-  );
+  const [mode] = useState(() => getMode(params.get("mode")));
 
   const [initial] = useState((): SavedGame => {
     const saved = loadSavedGame();

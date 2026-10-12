@@ -1,4 +1,5 @@
-import { openStream, respond } from "../../../../online/rooms";
+import { respond } from "../../../../lib/api";
+import { openStream } from "../../../../online/rooms";
 
 export const dynamic = "force-dynamic";
 
@@ -46,9 +47,9 @@ export async function GET(req: Request, { params }: Params) {
   });
 
   // An unknown room or player is answered with a JSON error instead
-  return respond(() => {
+  return respond(async () => {
     write("retry: 2000\n\n"); // reconnect quickly if the connection drops
-    unsubscribe = openStream(code, token, (view) => write(`data: ${JSON.stringify(view)}\n\n`), close);
+    unsubscribe = await openStream(code, token, (view) => write(`data: ${JSON.stringify(view)}\n\n`), close);
     heartbeat = setInterval(() => write(": ping\n\n"), HEARTBEAT_MS);
     req.signal.addEventListener("abort", close);
     return new Response(stream, {

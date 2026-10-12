@@ -1,0 +1,81 @@
+.preview {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.fieldset {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  min-width: 0;
+  border: none;
+}
+.choice input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.avatars {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 0.5rem;
+}
+@media (max-width: 480px) {
+  .avatars {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+.avatarChoice {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1;
+  border: 2px solid var(--border);
+  border-radius: 14px;
+  font-size: 1.6rem;
+  cursor: pointer;
+  transition: border-color 0.2s, transform 0.15s;
+}
+.choice input:checked + .avatarChoice {
+  border-color: var(--primary-x);
+  background: var(--surface-muted);
+  transform: scale(1.05);
+}
+
+.colors {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 40px));
+  gap: 0.5rem;
+}
+.swatch {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 3px solid var(--surface);
+  box-shadow: 0 0 0 2px var(--border);
+  cursor: pointer;
+  transition: box-shadow 0.2s;
+}
+.choice input:checked + .swatch {
+  box-shadow: 0 0 0 3px var(--text);
+}
+.choice input:focus-visible + .avatarChoice,
+.choice input:focus-visible + .swatch {
+  outline: 3px solid var(--primary-x);
+  outline-offset: 2px;
+}
+
+.danger {
+  border: 2px solid color-mix(in srgb, #e5484d 40%, transparent);
+}
+/* Base look comes from the shared Button (app/ui/Button) */
+.dangerBtn {
+  background: #b4232a;
+}
+.dangerBtn > span {
+  background: #e5484d;
+}

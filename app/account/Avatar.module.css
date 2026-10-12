@@ -1,0 +1,15 @@
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: var(--avatar-size);
+  height: var(--avatar-size);
+  border-radius: 50%;
+  background: var(--avatar-bg);
+  font-size: calc(var(--avatar-size) * 0.58);
+  line-height: 1;
+  /* Emoji fonts sit a little high */
+  padding-top: calc(var(--avatar-size) * 0.04);
+  user-select: none;
+}

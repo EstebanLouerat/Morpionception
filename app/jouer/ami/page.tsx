@@ -1,7 +1,8 @@
 "use client";
 
 import { FormEvent, useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import styles from "./Ami.module.css";
 import ui from "../../ui/common.module.css";
 import PageShell from "../../ui/PageShell";
@@ -14,6 +15,9 @@ import { getSideSettings } from "../../game/side";
 import { otherSide, type Side } from "../../game/rules";
 import { playFx } from "../../audio/engine";
 import QrCode from "../../online/QrCode";
+import Avatar from "../../account/Avatar";
+import { useAccount } from "../../account/client";
+import type { PublicProfile } from "../../account/protocol";
 import { createRoom, getRoomToken, joinRoom, leaveRoom } from "../../online/client";
 import { CODE_LENGTH, ERROR_MESSAGES, cleanCode } from "../../online/protocol";
 import { useRoom } from "../../online/useRoom";
@@ -46,9 +50,8 @@ const clockLabel = (seconds: number) =>
 // or, for the player who created the room, the waiting room is shown again.
 export default function JouerAmi() {
   const router = useRouter();
-  const [urlCode] = useState(() =>
-    cleanCode(new URLSearchParams(window.location.search).get("code") ?? "")
-  );
+  const params = useSearchParams();
+  const [urlCode] = useState(() => cleanCode(params.get("code") ?? ""));
 
   // Our seat in a room whose game has not started yet
   const [seat, setSeat] = useState<{ code: string; you: Side } | null>(null);
@@ -63,6 +66,7 @@ export default function JouerAmi() {
   const [copied, setCopied] = useState<"link" | "code" | null>(null);
 
   const { view, error: roomError } = useRoom(seat?.code ?? null);
+  const account = useAccount();
   const started = useRef(false);
 
   useEffect(() => {
@@ -297,6 +301,16 @@ export default function JouerAmi() {
     </section>
   );
 
+  // Once seated, the account that counts is the seat's (taken when joining)
+  const playingAs: PublicProfile | null | undefined = view
+    ? view.players[view.you].profile
+    : account.status === "user"
+    ? account.account
+    : account.status === "guest"
+    ? null
+    : undefined;
+  const here = urlCode && !hosting ? `/jouer/ami?code=${urlCode}` : "/jouer/ami";
+
   return (
     <PageShell title="Avec un ami" backHref="/jouer">
       <p className={ui.muted}>
@@ -304,6 +318,32 @@ export default function JouerAmi() {
           ? "Un ami t'invite à jouer : rejoins son salon !"
           : "Crée un salon et invite un ami à jouer en ligne, où qu'il soit."}
       </p>
+      {playingAs !== undefined && (
+        <p className={styles.identity}>
+          {playingAs ? (
+            <>
+              <Avatar avatar={playingAs.avatar} color={playingAs.color} size={24} />
+              <span>
+                Tu joues en tant que <strong>{playingAs.pseudo}</strong>
+              </span>
+            </>
+          ) : (
+            <span>
+              Tu joues en invité
+              {/* Leaving this page while hosting would cancel the room */}
+              {!hosting && (
+                <>
+                  {" · "}
+                  <Link href={`/compte?retour=${encodeURIComponent(here)}`} className={styles.link}>
+                    Se connecter
+                  </Link>{" "}
+                  pour garder tes statistiques
+                </>
+              )}
+            </span>
+          )}
+        </p>
+      )}
       {invited ? (
         <>
           {joinSection}

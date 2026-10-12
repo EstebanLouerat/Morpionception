@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import ui from "../../ui/common.module.css";
 import PageShell from "../../ui/PageShell";
 import { Button, ButtonLink } from "../../ui/Button";
@@ -12,9 +12,8 @@ import { clearSavedGame, hasGameInProgress } from "../../game/savedGame";
 // Options of a game, picked after the mode and before the game starts
 export default function Partie() {
   const router = useRouter();
-  const [mode] = useState(() =>
-    getMode(new URLSearchParams(window.location.search).get("mode"))
-  );
+  const params = useSearchParams();
+  const [mode] = useState(() => getMode(params.get("mode")));
   const [canResume] = useState(() => hasGameInProgress(mode.id));
   const gameHref = `/game?mode=${mode.id}`;
 

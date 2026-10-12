@@ -1,6 +1,7 @@
 "use client";
 
 import { CSSProperties } from "react";
+import { useSearchParams } from "next/navigation";
 import styles from "./Settings.module.css";
 import ui from "../ui/common.module.css";
 import PageShell from "../ui/PageShell";
@@ -15,9 +16,7 @@ const SLIDERS: { key: keyof AudioSettings; label: string }[] = [
 ];
 
 // Opened from the game (?from=game&mode=… or &room=…): the back button returns to it
-const getBackHref = () => {
-  if (typeof window === "undefined") return "/";
-  const params = new URLSearchParams(window.location.search);
+const getBackHref = (params: URLSearchParams) => {
   if (params.get("from") !== "game") return "/";
   const room = params.get("room");
   if (room) return `/game?room=${encodeURIComponent(room)}`;
@@ -26,11 +25,12 @@ const getBackHref = () => {
 };
 
 export default function Settings() {
+  const params = useSearchParams();
   const audio = useAudioSettings();
   const appearance = useAppearance();
 
   return (
-    <PageShell title="Paramètres" backHref={getBackHref()}>
+    <PageShell title="Paramètres" backHref={getBackHref(params)}>
       <section className={ui.section}>
         <h2 className={ui.sectionTitle}>Audio</h2>
         <div className={ui.card}>

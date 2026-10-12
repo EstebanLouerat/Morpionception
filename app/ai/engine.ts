@@ -189,7 +189,8 @@ export type SearchLimits = {
   iterations?: number;
   /** Time to think, in milliseconds */
   timeMs?: number;
-  /** Exploration constant of UCT */
+  /** Exploration constant of UCT. In games between versions, 0.5 beat 1.0 (67 %)
+   * at 6,000 random games per move and played even at 60,000 (docs/ai-training.md) */
   exploration?: number;
   rng?: Rng;
 };
@@ -202,7 +203,7 @@ const now = () => (typeof performance !== "undefined" ? performance.now() : Date
 export const search = (root: EngineState, limits: SearchLimits): SearchResult => {
   const started = now();
   const rng = limits.rng ?? Math.random;
-  const exploration = limits.exploration ?? 1.0;
+  const exploration = limits.exploration ?? 0.5;
   const buffer = new Uint8Array(81);
   const state = copyState(root);
   let rootMoves = movesOf(root, buffer);

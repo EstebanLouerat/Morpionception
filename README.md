@@ -50,21 +50,24 @@ These are in the menus as "Bientôt" (coming soon) placeholders:
 
 ## Project structure
 
-| Path               | Content                                                    |
-| ------------------ | ---------------------------------------------------------- |
-| `app/game/`        | Game rules, game screen (local, AI, online), mode registry |
-| `app/ai/`          | AI: search engine, Web Worker, levels and record           |
-| `app/jouer/`       | Mode selection and play-with-a-friend pages                |
+| Path               | Content                                                     |
+| ------------------ | ----------------------------------------------------------- |
+| `app/game/`        | Game rules, game screen (local, AI, online), mode registry  |
+| `app/ai/`          | AI: search engine, Web Worker, levels and record            |
+| `scripts/`         | AI tools: games between AIs, OpenSpiel rules check          |
+| `training/`        | Python side of AI training (OpenSpiel game export)          |
+| `docs/`            | Guides (training a stronger AI)                             |
+| `app/jouer/`       | Mode selection and play-with-a-friend pages                 |
 | `app/online/`      | Online rooms: MongoDB store, API client, live room hook, QR |
-| `app/api/rooms/`   | Rooms API (create, join, play, live updates)               |
-| `app/account/`     | Accounts: MongoDB store, auth, stats, API client, avatar   |
-| `app/api/account/` | Accounts API (sign up, log in, profile, password, delete)  |
-| `app/compte/`      | Account, stats and profile pages                           |
-| `app/parametres/`  | Settings (audio, appearance)                               |
-| `app/ui/`          | Shared components: buttons, icons, loader, page layout     |
-| `app/audio/`       | Web Audio sound effects and music                          |
-| `app/theme/`       | Theme and palette settings, applied before the first paint |
-| `app/lib/`         | Helpers (MongoDB connection, API, `localStorage` settings) |
+| `app/api/rooms/`   | Rooms API (create, join, play, live updates)                |
+| `app/account/`     | Accounts: MongoDB store, auth, stats, API client, avatar    |
+| `app/api/account/` | Accounts API (sign up, log in, profile, password, delete)   |
+| `app/compte/`      | Account, stats and profile pages                            |
+| `app/parametres/`  | Settings (audio, appearance)                                |
+| `app/ui/`          | Shared components: buttons, icons, loader, page layout      |
+| `app/audio/`       | Web Audio sound effects and music                           |
+| `app/theme/`       | Theme and palette settings, applied before the first paint  |
+| `app/lib/`         | Helpers (MongoDB connection, API, `localStorage` settings)  |
 
 ## AI
 
@@ -75,16 +78,23 @@ is kept as bit masks (9 bits per small board and per player), which runs about
 65,000 random games per second. It runs in a Web Worker (`app/ai/ai.worker.ts`),
 so the page stays smooth while it thinks, and needs no server.
 
-| Level         | How it plays                                       |
-| ------------- | -------------------------------------------------- |
-| Débutant      | 60 random games per move, 35 % of moves random     |
-| Intermédiaire | 600 random games per move, 8 % of moves random     |
-| Difficile     | 6,000 random games per move                        |
-| Expert        | 2 seconds per move (over 100,000 random games)     |
+| Level         | How it plays                                   |
+| ------------- | ---------------------------------------------- |
+| Débutant      | 60 random games per move, 35 % of moves random |
+| Intermédiaire | 600 random games per move, 8 % of moves random |
+| Difficile     | 6,000 random games per move                    |
+| Expert        | 2 seconds per move (over 100,000 random games) |
 
 Each level wins more than 90 % of its games against the level below it
 (measured with games between levels). Every level takes a move that wins the
-game at once.
+game at once, and Difficile and Expert never hand over a win in one move when
+another move avoids it.
+
+`npm run ai:arena -- expert difficile 20` plays games between two levels (or
+`it:<random games per move>`, `ms:<thinking time>`, `random`), to measure a change
+to the AI. [docs/ai-training.md](docs/ai-training.md) explains how to train a
+stronger AI for free (OpenSpiel self-play on Kaggle's free GPUs), and
+`npm run ai:check-openspiel` checks OpenSpiel's rules against the game's.
 
 ## Online play
 
@@ -188,9 +198,11 @@ MONGODB_URI="mongodb+srv://…"
 
 ## Scripts
 
-| Command         | Description                  |
-| --------------- | ---------------------------- |
-| `npm run dev`   | Start the development server |
-| `npm run build` | Build for production         |
-| `npm run start` | Serve the production build   |
-| `npm run lint`  | Run ESLint                   |
+| Command                                | Description                                                  |
+| -------------------------------------- | ------------------------------------------------------------ |
+| `npm run dev`                          | Start the development server                                 |
+| `npm run build`                        | Build for production                                         |
+| `npm run start`                        | Serve the production build                                   |
+| `npm run lint`                         | Run ESLint                                                   |
+| `npm run ai:arena -- <a> <b> [games]`  | Games between two AIs (levels, `it:<n>`, `ms:<n>`, `random`) |
+| `npm run ai:check-openspiel -- <file>` | Replay OpenSpiel games through the game's rules              |

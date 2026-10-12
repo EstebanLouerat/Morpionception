@@ -67,8 +67,12 @@ export const sendAction = (code: string, action: Exclude<RoomAction, { type: "jo
     `/api/rooms/${code}`,
     { ...action, token: getRoomToken(code) },
     // A leave sent while the page closes still reaches the server
-    action.type === "leave"
+    action.type === "leave" || (action.type === "presence" && !!action.gone)
   );
+
+/** This page has the room open (or, gone, closes it): the other player sees us online */
+export const sendPresence = (code: string, page: string, gone = false) =>
+  sendAction(code, { type: "presence", page, gone });
 
 export const leaveRoom = (code: string) => {
   const sent = sendAction(code, { type: "leave" });

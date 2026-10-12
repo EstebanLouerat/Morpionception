@@ -4,6 +4,7 @@
 // the room has not changed since it was read (version number v), otherwise it is
 // made again on the room as it is now. Open pages follow the room by reading it again
 // a few times per second, and say every few seconds that they are still open.
+// Room documents: _id is the code; seat tokens are server-made UUIDs, safe in field paths.
 import "server-only";
 import { randomInt, randomUUID } from "node:crypto";
 import { profilesOf, recordGame, type FinishedGame } from "../account/accounts";
@@ -41,10 +42,12 @@ const MAX_AGE_MS = 12 * 60 * 60_000;
 // A player who closes the page shows as offline only after this delay,
 // so a refresh does not flash "Hors ligne" on the other side
 const OFFLINE_GRACE_MS = 3000;
-// An open page says it is still there this often, and counts as closed after
-// PRESENCE_TIMEOUT_MS without saying it (closed without a word, server stopped)
-const PRESENCE_BEAT_MS = 5000;
-const PRESENCE_TIMEOUT_MS = 15_000;
+// An open page says it is still there every PRESENCE_BEAT_MS (see useRoom), and that
+// it closes when it does. Without a word for this long it counts as closed (crashed,
+// or a background tab whose timers the browser slowed down to once a minute).
+// The page says it, not the live connection: on Vercel, the server is not told
+// when the browser drops a connection.
+const PRESENCE_TIMEOUT_MS = 70_000;
 // How often an open page reads the room again
 const POLL_MS = 600;
 // Live connections end after this long and the page opens a new one by itself:
@@ -359,7 +362,8 @@ const isIndex = (n: unknown) => typeof n === "number" && Number.isInteger(n) && 
 /** Join the room (or come back to it), play, ask for a rematch, resign or leave.
  * userId is the account of the player, if logged in, kept from their first join. */
 export const performAction = (code: string, body: unknown, userId: string | null) => {
-  const { type, token, board, cell } = (body ?? {}) as Record<string, unknown>;
+  const { type, token, board, cell, page, gone } = (body ?? {}) as Record<string, unknown>;
+  if (type === "presence") return markPresence(code, token, page, gone === true);
 
   return changeRoom(code, (room, now, effects): JoinResponse | null => {
     const side = sideOf(room, token);
@@ -467,9 +471,40 @@ const settleTimeout = (code: string) =>
     else settleClock(room, now, effects);
   });
 
+const isPageId = (page: unknown): page is string =>
+  typeof page === "string" && /^[A-Za-z0-9-]{8,64}$/.test(page);
+
+/** A page of the player says it is open, or (gone) that it closes. Saved apart from
+ * the game: it does not change the room version. */
+const markPresence = async (code: string, token: unknown, page: unknown, gone: boolean) => {
+  if (!isPageId(page)) return fail("bad-request");
+  const room = (await readRoom(code)) ?? fail("not-found");
+  const side = sideOf(room, token);
+  if (!side || room.seats[side]!.left) return fail("forbidden");
+  const seatToken = token as string;
+  const now = Date.now();
+  const $set: Record<string, unknown> = { lastActivity: now, expireAt: expiry(room.createdAt, now) };
+  const $unset: Record<string, ""> = {};
+  if (gone) {
+    $unset[`presence.${seatToken}.${page}`] = "";
+    $set[`lastSeen.${seatToken}`] = now;
+  } else $set[`presence.${seatToken}.${page}`] = now;
+  // Pages of this seat closed without a word long ago
+  for (const [id, at] of Object.entries(room.presence?.[seatToken] ?? {})) {
+    if (id !== page && now - at > 2 * PRESENCE_TIMEOUT_MS) $unset[`presence.${seatToken}.${id}`] = "";
+  }
+  await (await roomsCollection()).updateOne(
+    { _id: code },
+    Object.keys($unset).length ? { $set, $unset } : { $set }
+  );
+  wakeUp(code);
+  return null;
+};
+
 /** Live room updates for one player's page: checks the seat (failing like the other
  * calls), then sends the view at every change until the returned function is called.
- * close is called when the room is gone, the seat is lost or the connection is old. */
+ * close is called when the room is gone, the seat is lost, the player's pages stopped
+ * saying they are open, or the connection is old (the page then opens a new one). */
 export const openStream = async (
   code: string,
   token: unknown,
@@ -480,53 +515,27 @@ export const openStream = async (
   const firstSide = sideOf(first, token);
   if (!firstSide || first.seats[firstSide]!.left) return fail("forbidden");
   const seatToken = token as string;
-  const rooms = await roomsCollection();
-  const streamId = randomUUID();
   const startedAt = Date.now();
   let stopped = false;
-  // Ended to be opened again: the page stays "online" meanwhile
-  let renewing = false;
   let wait = { done: Promise.resolve(), wake: () => {} };
-
-  /** Tells the other player this page is open (and keeps the room alive) */
-  const beat = async (room: Room, now: number) => {
-    const $set: Record<string, unknown> = {
-      [`presence.${seatToken}.${streamId}`]: now,
-      lastActivity: now,
-      expireAt: expiry(room.createdAt, now),
-    };
-    // Pages of this seat closed without a word long ago
-    const $unset: Record<string, ""> = {};
-    for (const [id, at] of Object.entries(room.presence?.[seatToken] ?? {})) {
-      if (now - at > 2 * PRESENCE_TIMEOUT_MS) $unset[`presence.${seatToken}.${id}`] = "";
-    }
-    await rooms.updateOne({ _id: code }, Object.keys($unset).length ? { $set, $unset } : { $set });
-    wakeUp(code);
-  };
 
   const run = async () => {
     let lastKey = "";
     let lastVersion = -1;
-    let lastBeat = 0;
     let profiles = new Map<string, PublicProfile>();
     let room: Room | null = first;
     while (!stopped) {
       try {
         const now = Date.now();
-        if (now - startedAt > STREAM_MAX_MS) {
-          renewing = true;
-          break;
-        }
+        if (now - startedAt > STREAM_MAX_MS) break;
         room ??= await readRoom(code);
         const side = room && sideOf(room, seatToken);
         // Room closed or seat given up: the page asks why when it reconnects
         if (!room || !side || room.seats[side]!.left) break;
-        if (now - lastBeat >= PRESENCE_BEAT_MS) {
-          await beat(room, now);
-          lastBeat = now;
-          room = await readRoom(code);
-          continue;
-        }
+        // Nobody follows this connection any more: the browser dropped it without the
+        // server being told. Ended; a page still there just opens a new one.
+        if (now - startedAt > PRESENCE_TIMEOUT_MS && offlineFor(room, room.seats[side]!, now) !== null)
+          break;
         if (timeLeft(room, now) <= 0 && !room.outcome) {
           await settleTimeout(code);
           room = null;
@@ -555,34 +564,10 @@ export const openStream = async (
     }
     if (!stopped) close();
   };
-
-  /** The page is closed: the other player sees it offline after the grace delay */
-  const leave = async () => {
-    try {
-      const now = Date.now();
-      await rooms.updateOne(
-        { _id: code },
-        {
-          $unset: { [`presence.${seatToken}.${streamId}`]: "" },
-          $set: {
-            [`lastSeen.${seatToken}`]: now,
-            lastActivity: now,
-            expireAt: expiry(first.createdAt, now),
-          },
-        }
-      );
-      wakeUp(code);
-    } catch (e) {
-      console.error("Salon : départ non enregistré", e);
-    }
-  };
-
   void run();
 
   return () => {
-    if (stopped) return;
     stopped = true;
     wait.wake();
-    if (!renewing) void leave();
   };
 };

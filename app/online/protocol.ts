@@ -28,7 +28,12 @@ export type RoomAction =
   | { type: "rematch" }
   | { type: "resign" }
   | { type: "claim" }
-  | { type: "leave" };
+  | { type: "leave" }
+  /** An open page of the player says it is still there, or (gone) that it closes */
+  | { type: "presence"; page: string; gone?: boolean };
+
+/** How often an open room page says it is still there */
+export const PRESENCE_BEAT_MS = 5000;
 
 export type RoomError =
   | "bad-request"

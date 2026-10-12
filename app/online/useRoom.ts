@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { getRoomToken, joinRoom } from "./client";
-import type { RoomError, RoomView } from "./protocol";
+import { getRoomToken, joinRoom, sendPresence } from "./client";
+import { PRESENCE_BEAT_MS, type RoomError, type RoomView } from "./protocol";
 
 export type RoomConnection = {
   view: RoomView | null;
@@ -47,10 +47,29 @@ export const useRoom = (code: string | null): RoomConnection => {
     };
     open();
 
+    // The other player sees us online while this page says so. Not crypto.randomUUID:
+    // it is missing on plain HTTP (a phone on the local network)
+    const page = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`;
+    const here = () =>
+      void sendPresence(code, page).then((res) => {
+        // Room gone or seat lost: nothing to tell any more
+        if (!res.ok && res.error !== "network") clearInterval(beat);
+      });
+    const gone = () => void sendPresence(code, page, true);
+    const beat = setInterval(here, PRESENCE_BEAT_MS);
+    here();
+    // pagehide: closed, refreshed or put in the back/forward cache; pageshow: back from it
+    window.addEventListener("pagehide", gone);
+    window.addEventListener("pageshow", here);
+
     return () => {
       stopped = true;
       source?.close();
       clearTimeout(retry);
+      clearInterval(beat);
+      window.removeEventListener("pagehide", gone);
+      window.removeEventListener("pageshow", here);
+      gone();
     };
   }, [code]);
 

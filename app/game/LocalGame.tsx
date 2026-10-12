@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button, ButtonLink } from "../ui/Button";
 import GameScreen from "./GameScreen";
-import { getMode } from "./modes";
+import { getMode, type ModeId } from "./modes";
 import { getClockSettings } from "./clock";
 import { GAME_STORAGE_KEY } from "./savedGame";
 import {
@@ -22,11 +22,13 @@ import {
 
 type SavedGame = { game: GameState; clockLimit: number; clocks: Clocks };
 
-const loadSavedGame = (): SavedGame | null => {
+/** The saved game, if it is one of this mode (games saved before modes were local) */
+const loadSavedGame = (mode: ModeId): SavedGame | null => {
   const saved = localStorage.getItem(GAME_STORAGE_KEY);
   if (!saved) return null;
   try {
     const parsed = JSON.parse(saved);
+    if ((parsed?.mode ?? "local") !== mode) return null;
     const fresh = newGameState();
     const clockLimit = parsed.clockLimit ?? 0;
     return {
@@ -53,7 +55,7 @@ export default function LocalGame() {
   const [mode] = useState(() => getMode(params.get("mode")));
 
   const [initial] = useState((): SavedGame => {
-    const saved = loadSavedGame();
+    const saved = loadSavedGame(mode.id);
     if (saved) return saved;
     // Chrono of a new game: the option picked before the game, if the mode supports it
     const clockLimit = mode.clockOption ? getClockSettings().seconds : 0;

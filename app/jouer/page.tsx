@@ -6,7 +6,7 @@ import ui from "../ui/common.module.css";
 import PageShell from "../ui/PageShell";
 import Icon from "../ui/Icon";
 import Badge from "../ui/Badge";
-import { MODES } from "../game/modes";
+import { MODES, hasOptions } from "../game/modes";
 import { playFx } from "../audio/engine";
 
 export default function Jouer() {
@@ -37,9 +37,7 @@ export default function Jouer() {
                 key={mode.id}
                 // Modes with options go through the options screen first
                 href={
-                  mode.clockOption
-                    ? `/jouer/partie?mode=${mode.id}`
-                    : `/game?mode=${mode.id}`
+                  hasOptions(mode) ? `/jouer/partie?mode=${mode.id}` : `/game?mode=${mode.id}`
                 }
                 className={styles.card}
                 onClick={() => playFx("click")}

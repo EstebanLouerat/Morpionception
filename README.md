@@ -36,20 +36,24 @@ Ultimate tic-tac-toe ("morpion" in French) built with Next.js, React and Framer 
 - Stats for online games of logged-in players: games, wins, win rate, best
   series, wins / draws / losses, results as X and as O, small boards won, and
   the last 20 games with the opponent, how it ended and the boards score.
+- Game against the AI (`/jouer/partie?mode=ai`): four levels from Débutant to
+  Expert, side choice, "Annuler" to take back a move, and a record of wins,
+  draws and losses per level on this device. The AI runs in the browser.
 - Light / dark theme and three player color palettes.
 
 ## Roadmap
 
 These are in the menus as "Bientôt" (coming soon) placeholders:
 
-- Game modes: vs AI, ranked, local 2v2, fun variants (`app/game/modes.ts`).
+- Game modes: ranked, local 2v2, fun variants (`app/game/modes.ts`).
 - Friends (`/amis`), leaderboard, custom pieces.
 
 ## Project structure
 
 | Path               | Content                                                    |
 | ------------------ | ---------------------------------------------------------- |
-| `app/game/`        | Game rules, game screen (local and online), mode registry  |
+| `app/game/`        | Game rules, game screen (local, AI, online), mode registry |
+| `app/ai/`          | AI: search engine, Web Worker, levels and record           |
 | `app/jouer/`       | Mode selection and play-with-a-friend pages                |
 | `app/online/`      | Online rooms: MongoDB store, API client, live room hook, QR |
 | `app/api/rooms/`   | Rooms API (create, join, play, live updates)               |
@@ -61,6 +65,26 @@ These are in the menus as "Bientôt" (coming soon) placeholders:
 | `app/audio/`       | Web Audio sound effects and music                          |
 | `app/theme/`       | Theme and palette settings, applied before the first paint |
 | `app/lib/`         | Helpers (MongoDB connection, API, `localStorage` settings) |
+
+## AI
+
+The AI (`app/ai/engine.ts`) uses Monte Carlo Tree Search: from the current
+position it plays thousands of random games to the end and picks the move that
+wins most often, spending its time on the most promising moves (UCT). The board
+is kept as bit masks (9 bits per small board and per player), which runs about
+65,000 random games per second. It runs in a Web Worker (`app/ai/ai.worker.ts`),
+so the page stays smooth while it thinks, and needs no server.
+
+| Level         | How it plays                                       |
+| ------------- | -------------------------------------------------- |
+| Débutant      | 60 random games per move, 35 % of moves random     |
+| Intermédiaire | 600 random games per move, 8 % of moves random     |
+| Difficile     | 6,000 random games per move                        |
+| Expert        | 2 seconds per move (over 100,000 random games)     |
+
+Each level wins more than 90 % of its games against the level below it
+(measured with games between levels). Every level takes a move that wins the
+game at once.
 
 ## Online play
 

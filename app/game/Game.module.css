@@ -271,6 +271,9 @@
 .modalBtns > * {
   flex: 1;
 }
+.modalUndo {
+  margin-top: 1rem;
+}
 
 /* --- Responsive --- */
 @media screen and (max-width: 1080px) and (min-width: 600px) {

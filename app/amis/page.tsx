@@ -7,7 +7,7 @@ import Icon from "../ui/Icon";
 import Badge from "../ui/Badge";
 import { ButtonLink } from "../ui/Button";
 
-// Placeholder page: friends need accounts and a backend, not built yet
+// Placeholder page: friends (on top of the accounts) are not built yet
 export default function Amis() {
   return (
     <PageShell title="Amis">
@@ -34,8 +34,8 @@ export default function Amis() {
           </span>
           <strong>Pas encore d&apos;amis</strong>
           <p className={ui.muted}>
-            Liste d&apos;amis, demandes, statut en ligne et défis arrivent avec les
-            comptes. En attendant, invite un ami à jouer !
+            Liste d&apos;amis, demandes, statut en ligne et défis arrivent bientôt. En
+            attendant, invite un ami à jouer !
           </p>
           <ButtonLink href="/jouer/ami" icon="userPlus" size="sm">
             Inviter un ami

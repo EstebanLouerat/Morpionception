@@ -2,6 +2,8 @@
 // Rooms live in the memory of the Node.js process: the app must run as one
 // long-lived server (next dev / next start), not as serverless functions.
 import { randomInt, randomUUID } from "node:crypto";
+import { profileOf, recordGame } from "../account/accounts";
+import { ApiFailure } from "../lib/api";
 import {
   applyMove,
   fullClocks,
@@ -9,12 +11,14 @@ import {
   isValidMove,
   newGameState,
   otherSide,
+  type Cell,
   type Clocks,
   type GameState,
   type Outcome,
   type Side,
 } from "../game/rules";
 import {
+  CLAIM_AFTER_MS,
   CODE_ALPHABET,
   CODE_LENGTH,
   MAX_CLOCK_SECONDS,
@@ -36,6 +40,8 @@ const OFFLINE_GRACE_MS = 3000;
 
 type Seat = {
   token: string;
+  /** Account of the player when they joined, null for a guest */
+  userId: string | null;
   left: boolean;
   rematch: boolean;
   /** When the player's last page closed */
@@ -59,17 +65,20 @@ type Room = {
   timer: ReturnType<typeof setTimeout> | null;
   outcome: Outcome;
   moves: number;
+  /** The result of this round went into the stats */
+  recorded: boolean;
   streams: Set<Stream>;
 };
 
-export class RoomFailure extends Error {
-  constructor(public reason: RoomError) {
-    super(reason);
-  }
-}
+const STATUS: Partial<Record<RoomError, number>> = {
+  "bad-request": 400,
+  forbidden: 403,
+  "not-found": 404,
+  "too-many-rooms": 503,
+};
 
 const fail = (reason: RoomError): never => {
-  throw new RoomFailure(reason);
+  throw new ApiFailure(reason, STATUS[reason] ?? 409);
 };
 
 // Kept on globalThis so the rooms survive hot reloads and are shared by every route
@@ -84,20 +93,24 @@ const SIDES: Side[] = ["X", "O"];
 const sideOf = (room: Room, token: unknown): Side | null =>
   (typeof token === "string" && SIDES.find((s) => room.seats[s]?.token === token)) || null;
 
-const isOnline = (room: Room, seat: Seat | null, now: number) =>
-  !!seat &&
-  ([...room.streams].some((s) => s.token === seat.token) ||
-    now - seat.lastSeen < OFFLINE_GRACE_MS);
+/** How long the player has been away, null while they have the room open */
+const offlineFor = (room: Room, seat: Seat, now: number) =>
+  [...room.streams].some((s) => s.token === seat.token) || now - seat.lastSeen < OFFLINE_GRACE_MS
+    ? null
+    : now - seat.lastSeen;
 
 const viewFor = (room: Room, you: Side): RoomView => {
   const now = Date.now();
   const player = (side: Side): PlayerInfo => {
     const seat = room.seats[side];
+    const away = seat ? offlineFor(room, seat, now) : null;
     return {
       joined: !!seat,
-      online: isOnline(room, seat, now),
+      online: !!seat && away === null,
+      offlineFor: away,
       left: !!seat?.left,
       rematch: !!seat?.rematch,
+      profile: profileOf(seat?.userId ?? null),
     };
   };
   const clocks = { ...room.clocks };
@@ -116,6 +129,7 @@ const viewFor = (room: Room, you: Side): RoomView => {
     clockRunning: room.turnStartedAt !== null,
     outcome: room.outcome,
     moves: room.moves,
+    recorded: room.recorded,
   };
 };
 
@@ -159,9 +173,29 @@ const settleClock = (room: Room, now: number) => {
   const side = room.game.currentPlayer;
   room.clocks[side] = Math.max(0, room.clocks[side] - (now - room.turnStartedAt));
   room.turnStartedAt = now;
-  if (room.clocks[side] <= 0) {
-    room.outcome = { winner: otherSide(side), reason: "timeout" };
-    stopClock(room);
+  if (room.clocks[side] <= 0) endGame(room, { winner: otherSide(side), reason: "timeout" });
+};
+
+const countBoards = (winners: Cell[], side: Side) => winners.filter((w) => w === side).length;
+
+/** Every way a round ends goes through here: the clock stops and the stats are saved.
+ * record: false for a result that should not count (leaving a player who is away) */
+const endGame = (room: Room, outcome: NonNullable<Outcome>, record = true) => {
+  if (room.outcome) return;
+  room.outcome = outcome;
+  stopClock(room);
+  // A game left before each player has moved does not count either
+  if (!record || room.moves < 2) return;
+  try {
+    room.recorded = recordGame({
+      reason: outcome.reason,
+      winner: outcome.winner,
+      players: { X: room.seats.X?.userId ?? null, O: room.seats.O?.userId ?? null },
+      boards: { X: countBoards(room.game.winners, "X"), O: countBoards(room.game.winners, "O") },
+    });
+  } catch (e) {
+    // The game goes on without stats rather than freezing on an account error
+    console.error("Statistiques non enregistrées", e);
   }
 };
 
@@ -179,7 +213,14 @@ const scheduleTimeout = (room: Room) => {
 
 // --- Public API ---
 
-const newSeat = (): Seat => ({ token: randomUUID(), left: false, rematch: false, lastSeen: 0 });
+const newSeat = (userId: string | null): Seat => ({
+  token: randomUUID(),
+  userId,
+  left: false,
+  rematch: false,
+  // Counts as just seen until the player's page opens
+  lastSeen: Date.now(),
+});
 
 const newCode = () => {
   let code: string;
@@ -189,7 +230,8 @@ const newCode = () => {
   return code;
 };
 
-export const createRoom = (body: unknown): JoinResponse => {
+/** New room with the creator seated; userId is their account, if logged in */
+export const createRoom = (body: unknown, userId: string | null): JoinResponse => {
   const { side, clock } = (body ?? {}) as { side?: unknown; clock?: unknown };
   if (side !== "X" && side !== "O" && side !== "random") fail("bad-request");
   if (typeof clock !== "number" || !Number.isInteger(clock) || clock < 0 || clock > MAX_CLOCK_SECONDS)
@@ -198,7 +240,7 @@ export const createRoom = (body: unknown): JoinResponse => {
   if (rooms.size >= MAX_ROOMS) fail("too-many-rooms");
 
   const you: Side = side === "X" || side === "O" ? side : randomInt(2) ? "X" : "O";
-  const seat = newSeat();
+  const seat = newSeat(userId);
   const now = Date.now();
   const room: Room = {
     code: newCode(),
@@ -213,6 +255,7 @@ export const createRoom = (body: unknown): JoinResponse => {
     timer: null,
     outcome: null,
     moves: 0,
+    recorded: false,
     streams: new Set(),
   };
   room.seats[you] = seat;
@@ -224,8 +267,13 @@ const getRoom = (code: string) => rooms.get(code) ?? fail("not-found");
 
 const isIndex = (n: unknown) => typeof n === "number" && Number.isInteger(n) && n >= 0 && n < 9;
 
-/** Join the room (or come back to it), play, ask for a rematch, resign or leave */
-export const performAction = (code: string, body: unknown): JoinResponse | null => {
+/** Join the room (or come back to it), play, ask for a rematch, resign or leave.
+ * userId is the account of the player, if logged in, kept from their first join. */
+export const performAction = (
+  code: string,
+  body: unknown,
+  userId: string | null
+): JoinResponse | null => {
   const { type, token, board, cell } = (body ?? {}) as Record<string, unknown>;
   const room = getRoom(code);
   const now = Date.now();
@@ -234,11 +282,18 @@ export const performAction = (code: string, body: unknown): JoinResponse | null 
 
   if (type === "join") {
     if (side) {
-      if (room.seats[side]!.left) fail("not-found");
+      const seat = room.seats[side]!;
+      if (seat.left) fail("not-found");
+      // Logged in since taking the seat: the account plays from the next move on,
+      // as long as this round has not started (an account never changes mid-game)
+      if (!seat.userId && userId && room.moves === 0) {
+        seat.userId = userId;
+        broadcast(room);
+      }
       return { code, token: token as string, you: side };
     }
     const free = SIDES.find((s) => !room.seats[s]) ?? fail("full");
-    const seat = newSeat();
+    const seat = newSeat(userId);
     room.seats[free] = seat;
     broadcast(room);
     return { code, token: seat.token, you: free };
@@ -260,8 +315,8 @@ export const performAction = (code: string, body: unknown): JoinResponse | null 
       if (!isValidMove(room.game, board as number, cell as number)) fail("invalid-move");
       room.game = applyMove(room.game, board as number, cell as number);
       room.moves++;
-      room.outcome = getBoardOutcome(room.game);
-      if (room.outcome) stopClock(room);
+      const outcome = getBoardOutcome(room.game);
+      if (outcome) endGame(room, outcome);
       else if (room.clockLimit > 0) {
         room.turnStartedAt = now;
         scheduleTimeout(room);
@@ -271,8 +326,17 @@ export const performAction = (code: string, body: unknown): JoinResponse | null 
     case "resign": {
       if (!opponent) fail("waiting");
       settleClock(room, now);
-      if (!room.outcome) room.outcome = { winner: otherSide(side), reason: "resign" };
-      stopClock(room);
+      // Giving up while the other player is away is not a loss
+      endGame(room, { winner: otherSide(side), reason: "resign" }, offlineFor(room, opponent!, now) === null);
+      break;
+    }
+    case "claim": {
+      // The other player has been away for long: they lose by giving up
+      if (!opponent) fail("waiting");
+      if (room.outcome) fail("game-over");
+      if ((offlineFor(room, opponent!, now) ?? 0) < CLAIM_AFTER_MS) fail("not-claimable");
+      settleClock(room, now);
+      endGame(room, { winner: side, reason: "resign" });
       break;
     }
     case "rematch": {
@@ -288,6 +352,7 @@ export const performAction = (code: string, body: unknown): JoinResponse | null 
         room.clocks = fullClocks(room.clockLimit);
         room.outcome = null;
         room.moves = 0;
+        room.recorded = false;
         stopClock(room);
       }
       break;
@@ -301,10 +366,9 @@ export const performAction = (code: string, body: unknown): JoinResponse | null 
       const seat = room.seats[side]!;
       seat.left = true;
       seat.rematch = false;
-      // Leaving a game in progress gives it up
+      // Leaving a game in progress gives it up, without a loss if the other player is away
       settleClock(room, now);
-      if (!room.outcome) room.outcome = { winner: otherSide(side), reason: "resign" };
-      stopClock(room);
+      endGame(room, { winner: otherSide(side), reason: "resign" }, offlineFor(room, opponent, now) === null);
       break;
     }
     default:
@@ -345,23 +409,3 @@ export const openStream = (
     setTimeout(() => rooms.get(room.code) === room && broadcast(room), OFFLINE_GRACE_MS + 50);
   };
 };
-
-const STATUS: Partial<Record<RoomError, number>> = {
-  "bad-request": 400,
-  forbidden: 403,
-  "not-found": 404,
-  "too-many-rooms": 503,
-};
-
-/** Response of a route handler: JSON (or a ready Response), errors as { error } */
-export const respond = async (run: () => unknown) => {
-  try {
-    const value = await run();
-    return value instanceof Response ? value : Response.json(value ?? { ok: true });
-  } catch (e) {
-    if (!(e instanceof RoomFailure)) throw e;
-    return Response.json({ error: e.reason }, { status: STATUS[e.reason] ?? 409 });
-  }
-};
-
-export const readJson = (req: Request): Promise<unknown> => req.json().catch(() => null);

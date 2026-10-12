@@ -1,5 +1,7 @@
 import styles from "./PlayerBar.module.css";
 import Icon from "../ui/Icon";
+import Avatar from "../account/Avatar";
+import type { PublicProfile } from "../account/protocol";
 import type { GameMode } from "./modes";
 import { formatClock } from "./clock";
 
@@ -19,9 +21,21 @@ type ChipProps = {
   clock?: number;
   /** Replaces "À jouer" (e.g. "Hors ligne") */
   status?: string;
+  /** Avatar of a logged-in player, as a badge on the symbol */
+  profile?: PublicProfile | null;
 };
 
-const PlayerChip = ({ side, name, active, won, lost, timedOut, clock, status }: ChipProps) => (
+const PlayerChip = ({
+  side,
+  name,
+  active,
+  won,
+  lost,
+  timedOut,
+  clock,
+  status,
+  profile,
+}: ChipProps) => (
   <div
     className={[
       styles.chip,
@@ -33,7 +47,17 @@ const PlayerChip = ({ side, name, active, won, lost, timedOut, clock, status }: 
       .filter(Boolean)
       .join(" ")}
   >
-    <span className={styles.symbol}>{side}</span>
+    <span className={styles.symbol}>
+      {side}
+      {profile && (
+        <Avatar
+          avatar={profile.avatar}
+          color={profile.color}
+          size={20}
+          className={styles.avatarBadge}
+        />
+      )}
+    </span>
     <span className={styles.info}>
       <span className={styles.name}>{name}</span>
       <span className={styles.status}>
@@ -69,6 +93,8 @@ type PlayerBarProps = {
   status?: Partial<Record<Side, string>>;
   /** Screen reader announcement, instead of the one built from the names */
   announcement?: string;
+  /** Profiles of logged-in players (online) */
+  profiles?: Partial<Record<Side, PublicProfile | null>>;
 };
 
 /** Both players, whose turn it is, their clocks, and later their avatars */
@@ -81,6 +107,7 @@ const PlayerBar = ({
   timedOut,
   status,
   announcement,
+  profiles,
 }: PlayerBarProps) => {
   const over = !!winner || isDraw;
   const chip = (side: Side) => (
@@ -93,6 +120,7 @@ const PlayerBar = ({
       timedOut={timedOut === side}
       clock={clocks?.[side]}
       status={status?.[side]}
+      profile={profiles?.[side]}
     />
   );
 

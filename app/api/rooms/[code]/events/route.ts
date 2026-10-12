@@ -1,4 +1,5 @@
-import { openStream, respond } from "../../../../online/rooms";
+import { respond } from "../../../../lib/api";
+import { openStream } from "../../../../online/rooms";
 
 export const dynamic = "force-dynamic";
 

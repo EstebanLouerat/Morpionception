@@ -11,8 +11,8 @@ import PageShell from "../ui/PageShell";
 import GameScreen from "./GameScreen";
 import { ONLINE_MODE } from "./modes";
 import { applyMove, otherSide, type Clocks, type GameState } from "./rules";
-import { getRoomToken, leaveRoom, sendAction } from "../online/client";
-import { ERROR_MESSAGES, type RoomView } from "../online/protocol";
+import { getRoomToken, joinRoom, leaveRoom, sendAction } from "../online/client";
+import { CLAIM_AFTER_MS, ERROR_MESSAGES, type RoomView } from "../online/protocol";
 import { useRoom } from "../online/useRoom";
 
 // A confirmation button goes back to normal after this delay
@@ -31,6 +31,12 @@ export default function OnlineGame({ code }: { code: string }) {
     // No seat in this room: the invite page joins it first
     if (!hasSeat || waiting) router.replace(`/jouer/ami?code=${code}`);
   }, [hasSeat, waiting, code, router]);
+
+  // Taking the seat again lets an account logged in since then play this room
+  // (from the next round if this one has started)
+  useEffect(() => {
+    if (hasSeat) joinRoom(code);
+  }, [hasSeat, code]);
 
   if (room.error) {
     return (
@@ -68,6 +74,10 @@ const OnlineBoard = ({ code, view, receivedAt, connected }: OnlineBoardProps) =>
   const friend = otherSide(you);
   const me = players[you];
   const them = players[friend];
+  // Their pseudo when logged in. Sentences are worded so a name needs no elision
+  // or agreement ("À Léa de jouer", "Léa est hors ligne").
+  const friendName = them.profile?.pseudo ?? "Ton ami";
+  const friendInSentence = them.profile?.pseudo ?? "ton ami";
 
   // Our move is shown at once, until the server sends it back (or refuses it)
   const [pending, setPending] = useState<{ round: number; moves: number; state: GameState } | null>(
@@ -88,22 +98,26 @@ const OnlineBoard = ({ code, view, receivedAt, connected }: OnlineBoardProps) =>
     });
   };
 
-  // The server sends the time left, the running clock counts down from there
+  // The server sends times (clocks, time offline) as of the view: they run from there
   const clockRunning = view.clockRunning && !outcome;
+  const friendAway = them.offlineFor !== null && !them.left && !outcome;
   const [now, setNow] = useState(Date.now);
   useEffect(() => {
-    if (!clockRunning) return;
-    const interval = setInterval(() => setNow(Date.now()), 250);
+    if (!clockRunning && !friendAway) return;
+    const interval = setInterval(() => setNow(Date.now()), clockRunning ? 250 : 1000);
     return () => clearInterval(interval);
-  }, [clockRunning]);
+  }, [clockRunning, friendAway]);
+  const elapsed = Math.max(0, now - receivedAt);
   let clocks: Clocks | null = null;
   if (view.clockLimit > 0) {
     clocks = { ...view.clocks };
     if (clockRunning) {
       const side = view.game.currentPlayer;
-      clocks[side] = Math.max(0, clocks[side] - Math.max(0, now - receivedAt));
+      clocks[side] = Math.max(0, clocks[side] - elapsed);
     }
   }
+  // Away long enough: the win can be claimed
+  const canClaim = friendAway && (them.offlineFor ?? 0) + elapsed >= CLAIM_AFTER_MS;
 
   // Abandoning (or quitting during the game) asks for a second click
   const [confirming, setConfirming] = useState<"resign" | "leave" | null>(null);
@@ -119,6 +133,7 @@ const OnlineBoard = ({ code, view, receivedAt, connected }: OnlineBoardProps) =>
     setConfirming(null);
     sendAction(code, { type: "resign" });
   };
+  const claim = () => sendAction(code, { type: "claim" });
   const quit = () => {
     leaveRoom(code);
     router.push("/jouer");
@@ -127,29 +142,37 @@ const OnlineBoard = ({ code, view, receivedAt, connected }: OnlineBoardProps) =>
 
   const mode = {
     ...ONLINE_MODE,
-    players: you === "X" ? { X: "Toi", O: "Ton ami" } : { X: "Ton ami", O: "Toi" },
+    players: you === "X" ? { X: "Toi", O: friendName } : { X: friendName, O: "Toi" },
   };
 
   let endTitle = "Égalité !";
   if (outcome?.winner) {
     const won = outcome.winner === you;
     if (outcome.reason === "timeout") {
-      endTitle = won ? "Tu as gagné au temps !" : "Ton ami a gagné au temps !";
+      endTitle = won ? "Tu as gagné au temps !" : `${friendName} a gagné au temps !`;
     } else if (outcome.reason === "resign") {
       endTitle = !won
         ? "Tu as abandonné."
         : them.left
-        ? "Ton ami a quitté la partie, tu as gagné !"
-        : "Ton ami a abandonné, tu as gagné !";
+        ? `${friendName} a quitté la partie, tu as gagné !`
+        : `${friendName} a abandonné, tu as gagné !`;
     } else {
-      endTitle = won ? "Tu as gagné !" : "Ton ami a gagné !";
+      endTitle = won ? "Tu as gagné !" : `${friendName} a gagné !`;
     }
   }
 
   let notice: string | null = null;
   if (!connected) notice = "Connexion perdue, reconnexion…";
-  else if (them.left) notice = "Ton ami a quitté la partie.";
-  else if (!them.online && !outcome) notice = "Ton ami s'est déconnecté, attends son retour…";
+  else if (them.left) notice = `${friendName} a quitté la partie.`;
+  else if (canClaim) notice = `${friendName} est hors ligne depuis plus de 2 minutes.`;
+  else if (friendAway) notice = `${friendName} est hors ligne, attends son retour…`;
+
+  // Whether this game went into the stats, said once it is over
+  const statsNote = !me.profile
+    ? "Crée un compte pour garder tes statistiques."
+    : view.recorded
+    ? "Partie comptée dans tes statistiques."
+    : "Partie non comptée dans tes statistiques.";
 
   // In the modal, the note above the buttons says who asked for it
   const rematchButton = (inModal: boolean) =>
@@ -175,8 +198,13 @@ const OnlineBoard = ({ code, view, receivedAt, connected }: OnlineBoardProps) =>
       settingsHref={`/parametres?from=game&room=${code}`}
       playerStatus={them.left ? { [friend]: "A quitté" } : !them.online ? { [friend]: "Hors ligne" } : {}}
       announcement={
-        outcome ? endTitle : game.currentPlayer === you ? "À toi de jouer" : "Au tour de ton ami"
+        outcome
+          ? endTitle
+          : game.currentPlayer === you
+          ? "À toi de jouer"
+          : `À ${friendInSentence} de jouer`
       }
+      profiles={{ X: players.X.profile, O: players.O.profile }}
       notice={notice}
       controls={
         gameOver ? (
@@ -188,6 +216,11 @@ const OnlineBoard = ({ code, view, receivedAt, connected }: OnlineBoardProps) =>
           </>
         ) : (
           <>
+            {canClaim && (
+              <Button className={styles.ctrlBtn} onClick={claim}>
+                Réclamer la victoire
+              </Button>
+            )}
             <Button
               className={styles.ctrlBtn}
               variant={confirming === "resign" ? "primary" : "secondary"}
@@ -200,7 +233,11 @@ const OnlineBoard = ({ code, view, receivedAt, connected }: OnlineBoardProps) =>
               variant={confirming === "leave" ? "primary" : "secondary"}
               onClick={() => (confirming === "leave" ? quit() : setConfirming("leave"))}
             >
-              {confirming === "leave" ? "Quitter et abandonner" : "Quitter"}
+              {confirming !== "leave"
+                ? "Quitter"
+                : friendAway
+                ? "Quitter (partie non comptée)"
+                : "Quitter et abandonner"}
             </Button>
           </>
         )
@@ -214,13 +251,14 @@ const OnlineBoard = ({ code, view, receivedAt, connected }: OnlineBoardProps) =>
           </h2>
           <p className={styles.modalNote}>
             {them.left
-              ? "Ton ami a quitté le salon."
+              ? `${friendName} a quitté le salon.`
               : me.rematch
-              ? "En attente de ton ami…"
+              ? `En attente de ${friendInSentence}…`
               : them.rematch
-              ? "Ton ami veut une revanche ! Les camps seront inversés."
+              ? `${friendName} veut une revanche ! Les camps seront inversés.`
               : "En cas de revanche, les camps sont inversés."}
           </p>
+          <p className={styles.modalNote}>{statsNote}</p>
           <div className={styles.modalBtns}>
             {rematchButton(true)}
             <Button variant="secondary" onClick={quit}>

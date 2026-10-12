@@ -41,6 +41,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+# accounts saved by the server (app/account/store.ts)
+/data/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

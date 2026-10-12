@@ -81,6 +81,25 @@ export const ButtonLink = ({
 
 type IconButtonProps = { icon: IconName; label: string; className?: string };
 
+/** Round link with any content (e.g. an avatar), same look as IconLink */
+export const RoundLink = ({
+  label,
+  className,
+  onClick,
+  children,
+  ...rest
+}: { label: string; className?: string } & ComponentProps<typeof Link>) => (
+  <Link
+    className={cx(styles.iconBtn, className)}
+    aria-label={label}
+    title={label}
+    onClick={withSound<MouseEvent<HTMLAnchorElement>>("click", onClick)}
+    {...rest}
+  >
+    {children}
+  </Link>
+);
+
 /** Round icon-only button, as a link */
 export const IconLink = ({
   icon,

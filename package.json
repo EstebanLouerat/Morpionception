@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "ai:arena": "tsc scripts/ai-arena.ts --outDir .arena --module commonjs --target es2020 --skipLibCheck && node .arena/scripts/ai-arena.js",
+    "ai:check-openspiel": "tsc scripts/check-openspiel.ts --outDir .arena --module commonjs --target es2020 --skipLibCheck && node .arena/scripts/check-openspiel.js"
   },
   "dependencies": {
     "@vercel/functions": "^3.9.11",

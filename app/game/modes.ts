@@ -13,6 +13,10 @@ export type GameMode = {
   players: { X: string; O: string };
   /** The chrono option (see clock.ts) applies to this mode */
   clockOption?: boolean;
+  /** The player picks a side (see side.ts) */
+  sideOption?: boolean;
+  /** The player picks the AI level (see app/ai/settings.ts) */
+  levelOption?: boolean;
   requiresAccount?: boolean;
 };
 
@@ -31,8 +35,11 @@ export const MODES: GameMode[] = [
     name: "Contre l'IA",
     tagline: "Affronte l'ordinateur, du débutant à l'expert.",
     icon: "bot",
-    available: false,
+    available: true,
+    // The game screen names the sides from the side picked
     players: { X: "Toi", O: "IA" },
+    sideOption: true,
+    levelOption: true,
   },
   {
     id: "ranked",
@@ -75,6 +82,10 @@ export const ONLINE_MODE: GameMode = {
   players: { X: "Joueur X", O: "Joueur O" },
   clockOption: true,
 };
+
+/** The mode has an options screen (/jouer/partie) before the game */
+export const hasOptions = (mode: GameMode) =>
+  !!(mode.clockOption || mode.sideOption || mode.levelOption);
 
 /** Mode from an id (e.g. the ?mode= URL param), falling back to a playable one */
 export const getMode = (id: string | null | undefined): GameMode => {

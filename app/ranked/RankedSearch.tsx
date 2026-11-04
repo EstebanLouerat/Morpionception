@@ -65,6 +65,13 @@ const RankedSearchProvider = ({ children }: { children: ReactNode }) => {
   searchingRef.current = searching;
   const pathRef = useRef(pathname);
   pathRef.current = pathname;
+  // Bumped by each join or leave: a poll sent before it answers about an older state
+  const actions = useRef(0);
+  const poll = useCallback(async () => {
+    const sentAt = actions.current;
+    const res = await queue("poll");
+    return sentAt === actions.current ? res : null;
+  }, []);
 
   /** Takes in an answer of the queue. fromSearch: this device was searching */
   const apply = useCallback(
@@ -101,18 +108,18 @@ const RankedSearchProvider = ({ children }: { children: ReactNode }) => {
     }
     if (searchingRef.current) return;
     let live = true;
-    queue("poll").then((res) => live && apply(res, false));
+    poll().then((res) => live && res && apply(res, false));
     return () => {
       live = false;
     };
-  }, [userId, pathname, apply]);
+  }, [userId, pathname, apply, poll]);
 
   // While searching, from any page: still there, and is there an opponent?
   useEffect(() => {
     if (!searching) return;
-    const timer = setInterval(() => queue("poll").then((res) => apply(res, true)), POLL_MS);
+    const timer = setInterval(() => poll().then((res) => res && apply(res, true)), POLL_MS);
     return () => clearInterval(timer);
-  }, [searching, apply]);
+  }, [searching, apply, poll]);
 
   // Closing the site stops the search (it would go on alone otherwise)
   useEffect(() => {
@@ -135,10 +142,14 @@ const RankedSearchProvider = ({ children }: { children: ReactNode }) => {
   }, [found, router]);
 
   const start = useCallback(async () => {
+    actions.current++;
     setStartedAt(Date.now());
     apply(await queue("join"), true);
   }, [apply]);
-  const cancel = useCallback(async () => apply(await queue("leave"), true), [apply]);
+  const cancel = useCallback(async () => {
+    actions.current++;
+    apply(await queue("leave"), true);
+  }, [apply]);
 
   const me = account.status === "user" ? account.account : null;
   const showPill = searching && pathname !== "/jouer/classe" && pathname !== "/game";

@@ -45,17 +45,15 @@ const FitToScreen = ({ children, className }: { children: ReactNode; className?:
       frame = requestAnimationFrame(fit);
     };
     fit();
-    // The room changes (window, rotation) or the content does (data loaded, a tab)
+    // The room changes (window, rotation) or the size of the content does (data
+    // loaded, a tab): text changing within the same size needs nothing
     const observer = new ResizeObserver(later);
     observer.observe(box);
     observer.observe(content);
-    const mutations = new MutationObserver(later);
-    mutations.observe(content, { childList: true, subtree: true, characterData: true });
     return () => {
       cancelAnimationFrame(frame);
       box.removeEventListener("scroll", toTop);
       observer.disconnect();
-      mutations.disconnect();
     };
   }, []);
 

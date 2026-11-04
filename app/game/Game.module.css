@@ -1,8 +1,10 @@
 /* --- Styles du jeu Morpionception --- */
+/* Exactly one screen tall: the grid takes the room the rest leaves */
 .container {
   position: relative;
-  min-height: 100vh;
-  padding: 2rem;
+  height: 100dvh;
+  overflow: hidden;
+  padding: clamp(0.75rem, 3dvh, 2rem);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -43,8 +45,9 @@
 }
 
 .title {
-  font-size: 3rem;
-  margin-bottom: 1rem;
+  flex-shrink: 0;
+  font-size: clamp(1.6rem, 5.5dvh, 3rem);
+  margin-bottom: clamp(0.25rem, 1.5dvh, 1rem);
   color: var(--text);
 }
 .title span {
@@ -67,20 +70,32 @@
   text-align: center;
 }
 
+.boardArea {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  margin: clamp(0.5rem, 2dvh, 1.5rem) 0;
+  container-type: size;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 .superBoard {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 1rem;
-  margin: 1.5rem 0;
-  scale: clamp(0.6, 1vw + 0.5, 1);
+  grid-template-rows: repeat(3, 1fr);
+  width: min(100cqw, 100cqh, 640px);
+  aspect-ratio: 1;
+  gap: clamp(5px, 2.2cqmin, 1rem);
 }
 
 .board {
   position: relative;
+  container-type: inline-size;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 4px;
-  padding: 8px;
+  gap: clamp(2px, 2cqi, 4px);
+  padding: clamp(3px, 4cqi, 8px);
   background: var(--surface);
   border-radius: 12px;
   box-shadow: 0 4px 6px var(--shadow);
@@ -120,13 +135,13 @@
 }
 
 .cell {
-  width: 50px;
-  height: 50px;
+  width: 100%;
+  aspect-ratio: 1;
   padding: 0;
   border: none;
   background: var(--surface-muted);
-  border-radius: 8px;
-  font-size: 1.5rem;
+  border-radius: clamp(4px, 4cqi, 8px);
+  font-size: 18cqi;
   font-weight: bold;
   cursor: pointer;
   transition: background 0.2s, color 0.2s;
@@ -152,6 +167,27 @@
   cursor: not-allowed;
   opacity: 0.7;
 }
+/* The move just played: ringed and tinted in its player's color, so the move that
+   chose the next board is easy to find */
+.cell.lastMove {
+  opacity: 1;
+  background: color-mix(in srgb, currentColor 22%, var(--surface-muted));
+  box-shadow: inset 0 0 0 2px currentColor;
+  animation: lastMove 0.45s ease-out;
+}
+@keyframes lastMove {
+  from {
+    box-shadow: inset 0 0 0 2px currentColor, 0 0 0 6px color-mix(in srgb, currentColor 45%, transparent);
+  }
+  to {
+    box-shadow: inset 0 0 0 2px currentColor, 0 0 0 0 transparent;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cell.lastMove {
+    animation: none;
+  }
+}
 
 .boardWinner {
   position: absolute;
@@ -162,7 +198,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 10rem;
+  font-size: 90cqi;
   opacity: 0.5;
   pointer-events: none;
 }
@@ -177,6 +213,7 @@
 }
 
 .numpadHint {
+  flex-shrink: 0;
   font-size: 0.9rem;
   color: var(--text-muted);
   margin-top: 0.75rem;
@@ -247,6 +284,14 @@
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
   text-align: center;
   min-width: 300px;
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100dvh - 1.5rem);
+}
+/* The modal lays out its own content */
+.modal .modalContent {
+  display: block;
+  padding: 0;
 }
 .modal > h2 {
   color: var(--text);
@@ -286,16 +331,12 @@
   .btnContainer .left {
     background: rgba(83, 83, 83, 0.5);
   }
-  .superBoard {
-    scale: clamp(0.75, 1vw + 0.7, 1);
-  }
 }
 
 /* Phones (portrait): the grid is sized from the viewport instead of being
    scaled, so it fills the width and leaves room for the buttons below. */
 @media (max-width: 600px) {
   .container {
-    min-height: 100dvh;
     padding: 0.75rem;
     border-radius: 0;
     outline-width: 4px;
@@ -307,8 +348,8 @@
   }
 
   .title {
-    font-size: clamp(1.5rem, 8vw, 1.9rem);
-    margin: 0.5rem 0 0.75rem;
+    font-size: clamp(1.4rem, min(8vw, 5dvh), 1.9rem);
+    margin: clamp(0.2rem, 1dvh, 0.5rem) 0 clamp(0.3rem, 1.5dvh, 0.75rem);
     /* Keep clear of the settings button */
     padding: 0 46px;
     text-align: center;
@@ -325,17 +366,14 @@
     height: 22px;
   }
 
+  .boardArea {
+    margin: clamp(0.3rem, 1.5dvh, 0.75rem) 0;
+  }
   .superBoard {
-    scale: none;
-    /* Full width, but shrink on short screens so the buttons stay visible */
-    width: min(100%, calc(100dvh - 15.5rem));
-    min-width: 270px;
     gap: 6px;
-    margin: 0.75rem 0;
   }
 
   .board {
-    container-type: inline-size;
     padding: 3px;
     gap: 3px;
     border-radius: 8px;
@@ -349,18 +387,11 @@
   }
 
   .cell {
-    width: 100%;
-    height: auto;
-    aspect-ratio: 1;
-    font-size: clamp(0.9rem, 5vw, 1.4rem);
     border-radius: 5px;
   }
 
-  .boardWinner {
-    font-size: 90cqi;
-  }
-
   .btnContainer {
+    flex-shrink: 0;
     position: static;
     width: 100%;
     margin: 0;
@@ -399,7 +430,6 @@
     grid-template-rows: auto auto 1fr;
     align-items: start;
     column-gap: 1.5rem;
-    min-height: 100dvh;
     padding: 0.75rem 1.5rem;
     border-radius: 0;
     outline-width: 4px;
@@ -410,17 +440,18 @@
     display: none;
   }
 
-  .superBoard {
+  .boardArea {
     grid-column: 1;
     grid-row: 1 / span 3;
-    scale: none;
     width: calc(100dvh - 1.5rem);
-    gap: 5px;
+    height: calc(100dvh - 1.5rem);
     margin: 0;
+  }
+  .superBoard {
+    gap: 5px;
   }
 
   .board {
-    container-type: inline-size;
     padding: 3px;
     gap: 2px;
     border-radius: 8px;
@@ -433,15 +464,7 @@
   }
 
   .cell {
-    width: 100%;
-    height: auto;
-    aspect-ratio: 1;
-    font-size: 4.5dvh;
     border-radius: 4px;
-  }
-
-  .boardWinner {
-    font-size: 90cqi;
   }
 
   .container .settingsBtn {

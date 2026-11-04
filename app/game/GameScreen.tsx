@@ -7,6 +7,7 @@ import confetti from "canvas-confetti";
 import { playFx } from "../audio/engine";
 import { IconLink } from "../ui/Button";
 import PlayerBar from "./PlayerBar";
+import FitToScreen from "../ui/FitToScreen";
 import type { GameMode } from "./modes";
 import type { PublicProfile } from "../account/protocol";
 import type { RankedRating } from "../ranked/protocol";
@@ -107,6 +108,7 @@ export default function GameScreen({
   const [selectedBoard, setSelectedBoard] = useState<number | null>(null);
 
   const { superBoard, winners, currentPlayer } = state;
+  const lastMove = state.lastMove ?? null;
   const winner = outcome?.winner ?? null;
   const isDraw = outcome?.reason === "draw";
   const gameOver = !!outcome;
@@ -227,7 +229,8 @@ export default function GameScreen({
               animate={{ scale: 1 }}
               exit={{ scale: 0.8 }}
             >
-              {endModal}
+              {/* Shrunk on short screens rather than cut */}
+              <FitToScreen className={styles.modalContent}>{endModal}</FitToScreen>
             </motion.div>
           </motion.div>
         )}
@@ -288,7 +291,8 @@ export default function GameScreen({
         </div>
       )}
 
-      {/* Super Board */}
+      {/* Super Board, as big as the room left on screen allows */}
+      <div className={styles.boardArea}>
       <div className={styles.superBoard}>
         {superBoard.map((board, idx) => (
           <motion.div
@@ -312,7 +316,10 @@ export default function GameScreen({
                 key={subIdx}
                 className={`${styles.cell} ${
                   cell ? styles[cell.toLowerCase()] : ""
-                }`}
+                } ${lastMove?.board === idx && lastMove.cell === subIdx ? styles.lastMove : ""}`}
+                aria-current={
+                  lastMove?.board === idx && lastMove.cell === subIdx ? "step" : undefined
+                }
                 onClick={() => handleCellClick(idx, subIdx)}
                 disabled={!!cell || !!winners[idx]}
                 whileTap={{ scale: 0.8 }}
@@ -347,6 +354,7 @@ export default function GameScreen({
             )}
           </motion.div>
         ))}
+      </div>
       </div>
 
       {/* Controls */}

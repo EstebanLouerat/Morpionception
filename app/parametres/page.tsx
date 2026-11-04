@@ -30,7 +30,8 @@ export default function Settings() {
   const appearance = useAppearance();
 
   return (
-    <PageShell title="Paramètres" backHref={getBackHref(params)}>
+    <PageShell title="Paramètres" backHref={getBackHref(params)} wide>
+      <div className={ui.columns}>
       <section className={ui.section}>
         <h2 className={ui.sectionTitle}>Audio</h2>
         <div className={ui.card}>
@@ -123,6 +124,7 @@ export default function Settings() {
           </div>
         </div>
       </section>
+      </div>
     </PageShell>
   );
 }

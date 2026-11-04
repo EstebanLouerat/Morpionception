@@ -6,6 +6,7 @@ import styles from "./Profil.module.css";
 import compte from "../Compte.module.css";
 import ui from "../../ui/common.module.css";
 import PageShell from "../../ui/PageShell";
+import Tabs from "../../ui/Tabs";
 import Loader from "../../ui/Loader";
 import { Button } from "../../ui/Button";
 import { playFx } from "../../audio/engine";
@@ -60,13 +61,25 @@ export default function Profil() {
   }, [account.status, expired, router]);
 
   return (
-    <PageShell title="Profil" backHref="/compte">
+    <PageShell title="Profil" backHref="/compte" wide={account.status === "user"}>
       {account.status === "user" ? (
-        <>
-          <ProfileForm account={account.account} />
-          <PasswordForm pseudo={account.account.pseudo} />
-          <DeleteAccount />
-        </>
+        <Tabs
+          label="Réglages du compte"
+          allOnWide
+          tabs={[
+            { id: "profile", label: "Profil", content: <ProfileForm account={account.account} /> },
+            {
+              id: "security",
+              label: "Sécurité",
+              content: (
+                <>
+                  <PasswordForm pseudo={account.account.pseudo} />
+                  <DeleteAccount />
+                </>
+              ),
+            },
+          ]}
+        />
       ) : account.status === "error" ? (
         <p className={ui.muted}>Impossible de joindre le serveur pour charger ton compte.</p>
       ) : (
@@ -109,13 +122,10 @@ const ProfileForm = ({ account }: { account: AccountView }) => {
   return (
     <section className={ui.section}>
       <h2 className={ui.sectionTitle}>Profil</h2>
-      <form className={ui.card} onSubmit={save}>
+      <form className={`${ui.card} ${styles.profileForm}`} onSubmit={save}>
         <div className={styles.preview}>
-          <Avatar avatar={avatar} color={color} size={72} />
-          <strong className={compte.name}>{pseudo.trim() || "…"}</strong>
-        </div>
-
-        <div className={compte.field}>
+          <Avatar avatar={avatar} color={color} size={64} />
+          <div className={`${compte.field} ${styles.pseudoField}`}>
           <label className={compte.fieldLabel} htmlFor="profile-pseudo">
             Pseudo
           </label>
@@ -133,12 +143,13 @@ const ProfileForm = ({ account }: { account: AccountView }) => {
             autoCorrect="off"
             spellCheck={false}
           />
-          <span className={`${ui.muted} ${compte.hint}`}>
-            Visible par tes adversaires. Tes parties restent liées à ton compte si tu le changes.
-          </span>
+          </div>
         </div>
+        <span className={`${ui.muted} ${compte.hint}`}>
+          Visible par tes adversaires. Tes parties restent liées à ton compte si tu le changes.
+        </span>
 
-        <fieldset className={styles.fieldset}>
+        <fieldset className={`${styles.fieldset} ${styles.avatarField}`}>
           <legend className={compte.fieldLabel}>Avatar</legend>
           <div className={styles.avatars}>
             {AVATARS.map((a) => (
@@ -163,7 +174,7 @@ const ProfileForm = ({ account }: { account: AccountView }) => {
           </div>
         </fieldset>
 
-        <fieldset className={styles.fieldset}>
+        <fieldset className={`${styles.fieldset} ${styles.colorField}`}>
           <legend className={compte.fieldLabel}>Couleur</legend>
           <div className={styles.colors}>
             {AVATAR_COLORS.map((c) => (

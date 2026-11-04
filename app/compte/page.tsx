@@ -7,7 +7,8 @@ import ui from "../ui/common.module.css";
 import PageShell from "../ui/PageShell";
 import Icon from "../ui/Icon";
 import Loader from "../ui/Loader";
-import { Button, ButtonLink } from "../ui/Button";
+import { Button, IconButton, IconLink } from "../ui/Button";
+import Tabs from "../ui/Tabs";
 import Avatar from "../account/Avatar";
 import { logout, refreshAccount, safeReturnPath, useAccount } from "../account/client";
 import { ACCOUNT_ERROR_MESSAGES, type AccountView } from "../account/protocol";
@@ -30,7 +31,7 @@ export default function Compte() {
   }, []);
 
   return (
-    <PageShell title="Compte" backHref={returnTo ?? "/"}>
+    <PageShell title="Compte" backHref={returnTo ?? "/"} wide={account.status === "user"}>
       {account.status === "loading" && <Loader label="Chargement du compte…" />}
       {account.status === "error" && (
         <div className={ui.card}>
@@ -41,7 +42,7 @@ export default function Compte() {
         </div>
       )}
       {account.status === "guest" && (
-        <>
+        <div className={ui.columns}>
           <section className={ui.card}>
             <div className={styles.profile}>
               <span className={styles.guestAvatar}>
@@ -62,7 +63,7 @@ export default function Compte() {
             </p>
           )}
           <AuthForm onDone={() => returnTo && router.replace(returnTo)} />
-        </>
+        </div>
       )}
       {account.status === "user" && <UserAccount account={account.account} />}
     </PageShell>
@@ -73,39 +74,40 @@ const UserAccount = ({ account }: { account: AccountView }) => {
   const [leaving, setLeaving] = useState(false);
   return (
     <>
-      <section className={ui.card}>
+      <section className={`${ui.card} ${styles.headerCard}`}>
         <div className={styles.profile}>
           <span className={styles.avatarWrap}>
-            <Avatar avatar={account.avatar} color={account.color} size={72} />
-            {account.crown && <Crown place={account.crown} size={34} className={styles.avatarCrown} />}
+            <Avatar avatar={account.avatar} color={account.color} size={64} />
+            {account.crown && <Crown place={account.crown} size={30} className={styles.avatarCrown} />}
           </span>
           <div className={styles.identity}>
             <strong className={styles.name}>{account.pseudo}</strong>
             <span className={ui.muted}>Membre depuis {monthYear(account.createdAt)}</span>
           </div>
-        </div>
-        <div className={ui.row}>
-          <ButtonLink href="/compte/profil" icon="edit" variant="secondary" size="sm">
-            Modifier le profil
-          </ButtonLink>
-          <Button
-            variant="secondary"
-            size="sm"
-            icon="logout"
-            disabled={leaving}
-            onClick={async () => {
-              setLeaving(true);
-              const res = await logout();
-              if (!res.ok) setLeaving(false);
-            }}
-          >
-            Se déconnecter
-          </Button>
+          <div className={styles.headerActions}>
+            <IconLink href="/compte/profil" icon="edit" label="Modifier le profil" />
+            <IconButton
+              icon="logout"
+              label="Se déconnecter"
+              disabled={leaving}
+              onClick={async () => {
+                setLeaving(true);
+                const res = await logout();
+                if (!res.ok) setLeaving(false);
+              }}
+            />
+          </div>
         </div>
       </section>
-      <RankedPanel ranked={account.ranked} />
-      <StatsPanel stats={account.stats} />
-      <RecentGames games={account.recent} />
+      <Tabs
+        label="Ton compte"
+        allOnWide
+        tabs={[
+          { id: "ranked", label: "Classé", content: <RankedPanel ranked={account.ranked} /> },
+          { id: "stats", label: "Stats", content: <StatsPanel stats={account.stats} /> },
+          { id: "games", label: "Parties", content: <RecentGames games={account.recent} /> },
+        ]}
+      />
     </>
   );
 };

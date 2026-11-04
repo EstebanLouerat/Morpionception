@@ -16,6 +16,7 @@ import { ERROR_MESSAGES, type RoomView } from "../online/protocol";
 import { useRoom } from "../online/useRoom";
 import { useAccount } from "../account/client";
 import RankChange from "../ranked/RankChange";
+import { useRankedSearch } from "../ranked/RankedSearch";
 import rankedStyles from "../ranked/Ranked.module.css";
 
 // A confirmation button goes back to normal after this delay
@@ -73,6 +74,7 @@ type OnlineBoardProps = {
 
 const OnlineBoard = ({ code, view, receivedAt, connected }: OnlineBoardProps) => {
   const router = useRouter();
+  const { start: startSearch } = useRankedSearch();
   const { you, outcome, players } = view;
   // A ranked game: one game, rated, no rematch (the next one is found by the search)
   const ranked = !!view.ranked;
@@ -151,14 +153,17 @@ const OnlineBoard = ({ code, view, receivedAt, connected }: OnlineBoardProps) =>
     sendAction(code, { type: "resign" });
   };
   const claim = () => sendAction(code, { type: "claim" });
-  const quit = () => {
-    leaveRoom(code);
+  // The server hears it before the next page (which would bring a ranked player back
+  // to a game still on)
+  const quit = async () => {
+    await leaveRoom(code);
     router.push(ranked ? "/jouer/classe" : "/jouer");
   };
-  // Ranked: straight back to the search
-  const playAgain = () => {
-    leaveRoom(code);
-    router.push("/jouer/classe?recherche=1");
+  // Ranked: straight back to the search, which goes on in the background
+  const playAgain = async () => {
+    await leaveRoom(code);
+    void startSearch();
+    router.push("/jouer/classe");
   };
   const rematch = () => sendAction(code, { type: "rematch" });
 

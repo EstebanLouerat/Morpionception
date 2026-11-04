@@ -13,7 +13,7 @@
   display: flex;
   align-items: center;
   gap: 1rem;
-  padding: 1rem;
+  padding: clamp(0.55rem, 1.8dvh, 1rem) 1rem;
   border: 2px solid transparent;
   border-radius: 16px;
   background: var(--surface);
@@ -46,8 +46,8 @@ a.card:focus-visible {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  width: 48px;
-  height: 48px;
+  width: clamp(36px, 6.5dvh, 48px);
+  height: clamp(36px, 6.5dvh, 48px);
   border-radius: 14px;
   background: var(--primary-x);
   color: #fff;
@@ -76,4 +76,11 @@ a.card:focus-visible {
 .chevron {
   flex-shrink: 0;
   color: var(--primary-x);
+}
+
+/* Short screens: the name of each mode is enough */
+@media (max-height: 640px) {
+  .text small {
+    display: none;
+  }
 }

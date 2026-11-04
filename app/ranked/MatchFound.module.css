@@ -1,0 +1,152 @@
+/* Full screen, above everything (the end of game modal, the search indicator) */
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2500;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #0d0e14;
+  color: #fff;
+}
+
+/* The two halves meet on a slant: side by side (wide) or one above the other (tall) */
+.half {
+  position: absolute;
+  inset: 0;
+}
+.halfMine {
+  background: linear-gradient(135deg, var(--mine), color-mix(in srgb, var(--mine) 55%, #000));
+  clip-path: polygon(0 0, 58% 0, 42% 100%, 0 100%);
+}
+.halfTheirs {
+  background: linear-gradient(315deg, var(--theirs), color-mix(in srgb, var(--theirs) 55%, #000));
+  clip-path: polygon(58% 0, 100% 0, 100% 100%, 42% 100%);
+}
+.tall .halfMine {
+  clip-path: polygon(0 0, 100% 0, 100% 42%, 0 58%);
+}
+.tall .halfTheirs {
+  clip-path: polygon(0 58%, 100% 42%, 100% 100%, 0 100%);
+}
+.flash {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at center, #fff 0%, rgba(255, 255, 255, 0.4) 25%, transparent 60%);
+  pointer-events: none;
+}
+
+.stage {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(0.75rem, 3vmin, 2rem);
+  width: min(100%, 900px);
+  padding: 1.5rem;
+}
+.title {
+  font-size: clamp(1.3rem, 5vmin, 2.4rem);
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  text-shadow: 0 3px 12px rgba(0, 0, 0, 0.45);
+}
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  width: 100%;
+}
+.tall .row {
+  flex-direction: column;
+  gap: clamp(0.5rem, 3vh, 2rem);
+}
+
+.player {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45rem;
+  text-align: center;
+}
+.avatar {
+  position: relative;
+  display: flex;
+  padding: 5px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.25);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
+}
+.crown {
+  position: absolute;
+  top: -24px;
+  left: 50%;
+  transform: translateX(-50%) rotate(-10deg);
+}
+.symbol {
+  position: absolute;
+  right: -6px;
+  bottom: -6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: 3px solid #fff;
+  border-radius: 10px;
+  background: #0d0e14;
+  font-weight: 900;
+}
+.first .symbol {
+  background: var(--mine);
+}
+.second .symbol {
+  background: var(--theirs);
+}
+.name {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: clamp(1.1rem, 4vmin, 1.8rem);
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+.rank {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.7rem 0.25rem 0.35rem;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.3);
+  font-weight: 800;
+  font-size: 0.9rem;
+}
+.vs {
+  flex-shrink: 0;
+  font-size: clamp(2.6rem, 12vmin, 5.5rem);
+  font-weight: 900;
+  font-style: italic;
+  line-height: 1;
+  color: #fff;
+  -webkit-text-stroke: 2px rgba(0, 0, 0, 0.25);
+  text-shadow:
+    0 0 24px rgba(255, 255, 255, 0.8),
+    0 6px 0 rgba(0, 0, 0, 0.35);
+}
+.note {
+  font-weight: 700;
+  opacity: 0.9;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+}
+.timer {
+  width: min(260px, 70%);
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.85);
+  transform-origin: left;
+}

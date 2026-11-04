@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import styles from "./Classement.module.css";
 import ui from "../ui/common.module.css";
+import Pager, { usePages } from "../ui/Pager";
 import PageShell from "../ui/PageShell";
 import Loader from "../ui/Loader";
 import { Button, ButtonLink } from "../ui/Button";
@@ -18,6 +19,39 @@ import type { Leaderboard, LeaderboardEntry } from "../ranked/protocol";
 import { rankOf } from "../ranked/rating";
 
 const place = (n: number) => (n === 1 ? "1er" : `${n}e`);
+
+// Rows of the list shown per page: as many as the screen holds below its top (no
+// scrolling), measured on the page
+const ROW_HEIGHT = 57;
+// The pager under the list, and the bottom margin of the page
+const BELOW_LIST = 76;
+
+/** Zoom applied by FitToScreen around an element (1 when none) */
+const zoomAround = (el: HTMLElement) => {
+  let zoom = 1;
+  for (let e: HTMLElement | null = el; e; e = e.parentElement) if (e.style.zoom) zoom *= Number(e.style.zoom);
+  return zoom;
+};
+
+const useRowsThatFit = (list: React.RefObject<HTMLDivElement | null>, ready: boolean) => {
+  const [rows, setRows] = useState(5);
+  useLayoutEffect(() => {
+    if (!ready) return;
+    const measure = () => {
+      const el = list.current;
+      if (!el) return;
+      const zoom = zoomAround(el);
+      // Unzoomed page units: the room as if the page were not zoomed out
+      const top = el.getBoundingClientRect().top / zoom;
+      const row = (el.querySelector("li")?.getBoundingClientRect().height ?? ROW_HEIGHT * zoom) / zoom;
+      setRows(Math.max(3, Math.floor((window.innerHeight - top - BELOW_LIST) / row)));
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, [list, ready]);
+  return rows;
+};
 
 /** The best ranked players: a podium for the crowned three, then the list */
 export default function Classement() {
@@ -39,9 +73,18 @@ export default function Classement() {
   const podium = players.slice(0, 3);
   const rest = players.slice(3);
   const meListed = !!me && players.some((p) => p.id === me.id);
+  const listRef = useRef<HTMLDivElement>(null);
+  const rows = useRowsThatFit(listRef, rest.length > 0);
+  const shown = usePages(rest, rows);
+  // Opens on the page with your place
+  const myIndex = rest.findIndex((p) => p.id === me?.id);
+  const { setPage } = shown;
+  useEffect(() => {
+    if (myIndex >= 0) setPage(Math.floor(myIndex / rows));
+  }, [myIndex, rows, setPage]);
 
   return (
-    <PageShell title="Classement" backHref="/">
+    <PageShell title="Classement" backHref="/" wide>
       <p className={ui.muted}>
         Top {LEADERBOARD.size} des joueurs classés
         {board && board.activeDays > 0 && `, actifs ces ${board.activeDays} derniers jours`}.
@@ -70,6 +113,7 @@ export default function Classement() {
       )}
 
       {podium.length > 0 && (
+      <div className={styles.layout}>
         <ol className={styles.podium} aria-label="Podium">
           {/* Second, first, third: the winner in the middle */}
           {[podium[1], podium[0], podium[2]].map(
@@ -102,14 +146,18 @@ export default function Classement() {
               )
           )}
         </ol>
-      )}
 
       {rest.length > 0 && (
-        <ol className={styles.list} start={4}>
-          {rest.map((player) => (
-            <Row key={player.id} player={player} mine={player.id === me?.id} />
-          ))}
-        </ol>
+        <div className={styles.listBlock} ref={listRef}>
+          <ol className={styles.list} start={4 + shown.page * rows}>
+            {shown.items.map((player) => (
+              <Row key={player.id} player={player} mine={player.id === me?.id} />
+            ))}
+          </ol>
+          <Pager page={shown.page} pages={shown.pages} onChange={shown.setPage} label="Pages du classement" />
+        </div>
+      )}
+      </div>
       )}
 
       {me && !meListed && board && (

@@ -9,6 +9,7 @@ import { IconLink } from "../ui/Button";
 import PlayerBar from "./PlayerBar";
 import type { GameMode } from "./modes";
 import type { PublicProfile } from "../account/protocol";
+import type { RankedRating } from "../ranked/protocol";
 import {
   getClosedBoards,
   getForcedBoard,
@@ -72,6 +73,8 @@ type GameScreenProps = {
   announcement?: string;
   /** Profiles of logged-in players (online), shown as avatars */
   profiles?: Partial<Record<Side, PublicProfile | null>>;
+  /** Ranked game: each player's rating, shown as their rank */
+  ranks?: Record<Side, RankedRating> | null;
   /** Message under the players (e.g. connection lost) */
   notice?: ReactNode;
   /** Buttons of the control panel, with the ctrlBtn class */
@@ -93,6 +96,7 @@ export default function GameScreen({
   playerStatus,
   announcement,
   profiles,
+  ranks,
   notice,
   controls,
   endModal,
@@ -263,6 +267,7 @@ export default function GameScreen({
           status={playerStatus}
           announcement={announcement}
           profiles={profiles}
+          ranks={ranks}
         />
         {notice && (
           <p className={styles.notice} role="status">

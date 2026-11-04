@@ -1,6 +1,7 @@
 // Messages exchanged between the online game pages and the rooms API (app/api/rooms).
 import type { Clocks, GameState, Outcome, Side } from "../game/rules";
 import type { PublicProfile } from "../account/protocol";
+import type { RankedRating, RatingChange } from "../ranked/protocol";
 import type { SideChoice } from "../game/side";
 
 export const CODE_LENGTH = 6;
@@ -101,4 +102,10 @@ export type RoomView = {
   moves: number;
   /** The result of this round went into the players' stats */
   recorded: boolean;
+  /** A ranked game: each player's rating before it (null for a game with a friend) */
+  ranked: Record<Side, RankedRating> | null;
+  /** The ranked game is rated: ratings before and after (arrives just after the result) */
+  ratings: Record<Side, RatingChange> | null;
+  /** How long the other player must have been away before the win can be claimed */
+  claimAfter: number;
 };

@@ -39,14 +39,21 @@ Ultimate tic-tac-toe ("morpion" in French) built with Next.js, React and Framer 
 - Game against the AI (`/jouer/partie?mode=ai`): four levels from Débutant to
   Expert, side choice, "Annuler" to take back a move, and a record of wins,
   draws and losses per level on this device. The AI runs in the browser.
+- Ranked mode (`/jouer/classe`, account needed): matchmaking by rating, a
+  rating like chess.com's (big jumps for new players that shrink game after game),
+  ranks with divisions like Valorant from Bois to Morpion Mastermind, 5 placement
+  games, and animations when you move up or down.
+- Leaderboard (`/classement`): the top 50 ranked players. The top 3 wear a gold,
+  silver or bronze crown on their avatar: on the home page, the account page and
+  next to their symbol in every online game.
 - Light / dark theme and three player color palettes.
 
 ## Roadmap
 
 These are in the menus as "Bientôt" (coming soon) placeholders:
 
-- Game modes: ranked, local 2v2, fun variants (`app/game/modes.ts`).
-- Friends (`/amis`), leaderboard, custom pieces.
+- Game modes: local 2v2, fun variants (`app/game/modes.ts`).
+- Friends (`/amis`), custom pieces.
 
 ## Project structure
 
@@ -54,14 +61,17 @@ These are in the menus as "Bientôt" (coming soon) placeholders:
 | ------------------ | ----------------------------------------------------------- |
 | `app/game/`        | Game rules, game screen (local, AI, online), mode registry  |
 | `app/ai/`          | AI: search engine, Web Worker, levels and record            |
-| `scripts/`         | AI tools: games between AIs, OpenSpiel rules check          |
+| `scripts/`         | AI tools, ranked ladder simulator                           |
 | `training/`        | Python side of AI training (OpenSpiel game export)          |
 | `docs/`            | Guides (training a stronger AI)                             |
-| `app/jouer/`       | Mode selection and play-with-a-friend pages                 |
+| `app/jouer/`       | Mode selection, play-with-a-friend and ranked pages         |
 | `app/online/`      | Online rooms: MongoDB store, API client, live room hook, QR |
 | `app/api/rooms/`   | Rooms API (create, join, play, live updates)                |
 | `app/account/`     | Accounts: MongoDB store, auth, stats, API client, avatar    |
 | `app/api/account/` | Accounts API (sign up, log in, profile, password, delete)   |
+| `app/ranked/`      | Ranked: settings, rating, queue, leaderboard, emblems       |
+| `app/api/ranked/`  | Ranked API (search for a game, leaderboard)                 |
+| `app/classement/`  | Leaderboard page                                            |
 | `app/compte/`      | Account, stats and profile pages                            |
 | `app/parametres/`  | Settings (audio, appearance)                                |
 | `app/ui/`          | Shared components: buttons, icons, loader, page layout      |
@@ -169,6 +179,68 @@ proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
 proxy_set_header X-Forwarded-Proto $scheme;
 ```
 
+## Ranked
+
+Every setting is in [`app/ranked/config.ts`](app/ranked/config.ts), with a comment
+on what it does: starting rating, size of the jumps at the start and at the end,
+placement games, the ladder (names, starting ratings, divisions, colors), the
+matchmaking range, the chrono, and the leaderboard. After a change,
+`npm run ranked:simulate` prints how many points a game is worth over time and
+where a population of players ends up on the ladder.
+
+**Rating.** The rating is computed with Glicko, as on chess.com. Each player has a
+rating (1000 to start) and an uncertainty. A new player is very uncertain, so a
+game moves their rating a lot; each game makes it more certain, so the jumps
+shrink. A player back after a long break moves faster again. Points won or lost
+also depend on the opponent: beating a stronger player is worth more.
+
+| Game          | 1    | 2    | 3    | 5   | 10  | 20  | 30 and later |
+| ------------- | ---- | ---- | ---- | --- | --- | --- | ------------ |
+| Win (or loss) | ±162 | ±142 | ±102 | ±65 | ±34 | ±17 | ±13          |
+
+(Against an opponent of the same rating. A draw between equals changes nothing.)
+
+**Ranks.** The rank is hidden during the first 5 games (placement). Then each tier
+has three divisions (I, II, III), 50 points each:
+
+| Tier    | From | Tier                   | From |
+| ------- | ---- | ---------------------- | ---- |
+| Bois    | 550  | Platine                | 1150 |
+| Bronze  | 700  | Diamant                | 1300 |
+| Argent  | 850  | Maître                 | 1450 |
+| Or      | 1000 | **Morpion Mastermind** | 1600 |
+
+Ratings below 550 count as Bois I. Morpion Mastermind has no divisions.
+
+**Matchmaking.** A searching player is paired with the closest rating within
+±100 points, a range that grows by 15 points per second of waiting. Two players
+cannot play more than 10 rated games together in 24 hours. Sides are drawn at
+random, and the 5-minute chrono starts at once. There is no rematch: "Rejouer"
+starts a new search. Resigning, leaving or running out of time is a loss. An
+opponent who has not opened the game after 20 seconds can be left: the game is
+cancelled with no points lost (any game with fewer than 2 moves is not rated).
+
+**Leaderboard.** The top 50 placed players who played a ranked game in the last
+30 days, refreshed after each rated game (and at most every 15 seconds on each
+server instance). The top 3 get the crowns.
+
+| Route                         | Description                                                |
+| ----------------------------- | ---------------------------------------------------------- |
+| `POST /api/ranked/queue`      | `{ action: "join" \| "poll" \| "leave" }` (logged in only) |
+| `GET /api/ranked/leaderboard` | Top players, with their rating and results                 |
+
+A search is kept going by the page asking every 1.5 seconds; a page silent for 10
+seconds is not paired anymore. Players are paired under a lock in MongoDB, so two
+server instances never pair the same player twice. Ranked games are ordinary rooms
+(same API and live updates as friend games) that carry both ratings; when one
+ends, the server rates it once and saves the new ratings in the room, so both
+pages show the change.
+
+MongoDB collections: `queue` (searching players; dropped 60 seconds after the page
+stops asking), `locks` (the pairing lock), `rankedGames` (one entry per rated game,
+kept 30 days: rates each game once, and counts games between two players). Ratings
+are saved on each account (`users.ranked`).
+
 ## Playing from a phone
 
 To play from a phone on the same network during development, open the app with
@@ -206,3 +278,4 @@ MONGODB_URI="mongodb+srv://…"
 | `npm run lint`                         | Run ESLint                                                   |
 | `npm run ai:arena -- <a> <b> [games]`  | Games between two AIs (levels, `it:<n>`, `ms:<n>`, `random`) |
 | `npm run ai:check-openspiel -- <file>` | Replay OpenSpiel games through the game's rules              |
+| `npm run ranked:simulate`              | Points per game and ladder spread for the ranked settings    |

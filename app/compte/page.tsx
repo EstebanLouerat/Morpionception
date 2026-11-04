@@ -13,6 +13,8 @@ import { logout, refreshAccount, safeReturnPath, useAccount } from "../account/c
 import { ACCOUNT_ERROR_MESSAGES, type AccountView } from "../account/protocol";
 import AuthForm from "./AuthForm";
 import StatsPanel from "./StatsPanel";
+import RankedPanel from "./RankedPanel";
+import Crown from "../ranked/Crown";
 import RecentGames from "./RecentGames";
 import { monthYear } from "./format";
 
@@ -48,8 +50,8 @@ export default function Compte() {
               <div>
                 <strong className={styles.name}>Invité</strong>
                 <p className={ui.muted}>
-                  Crée un compte pour garder tes statistiques en ligne et choisir ton pseudo et
-                  ton avatar. Amis et parties classées arrivent bientôt.
+                  Crée un compte pour garder tes statistiques en ligne, jouer en classé et
+                  choisir ton pseudo et ton avatar. Les amis arrivent bientôt.
                 </p>
               </div>
             </div>
@@ -73,7 +75,10 @@ const UserAccount = ({ account }: { account: AccountView }) => {
     <>
       <section className={ui.card}>
         <div className={styles.profile}>
-          <Avatar avatar={account.avatar} color={account.color} size={72} />
+          <span className={styles.avatarWrap}>
+            <Avatar avatar={account.avatar} color={account.color} size={72} />
+            {account.crown && <Crown place={account.crown} size={34} className={styles.avatarCrown} />}
+          </span>
           <div className={styles.identity}>
             <strong className={styles.name}>{account.pseudo}</strong>
             <span className={ui.muted}>Membre depuis {monthYear(account.createdAt)}</span>
@@ -98,6 +103,7 @@ const UserAccount = ({ account }: { account: AccountView }) => {
           </Button>
         </div>
       </section>
+      <RankedPanel ranked={account.ranked} />
       <StatsPanel stats={account.stats} />
       <RecentGames games={account.recent} />
     </>

@@ -13,3 +13,15 @@
   padding-top: calc(var(--avatar-size) * 0.04);
   user-select: none;
 }
+
+/* An avatar wearing the crown of a top 3 ranked player */
+.crowned {
+  position: relative;
+  overflow: visible;
+}
+.crown {
+  position: absolute;
+  top: -13px;
+  left: 50%;
+  transform: translateX(-50%) rotate(-12deg);
+}

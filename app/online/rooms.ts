@@ -11,6 +11,9 @@ import { profilesOf, recordGame, type FinishedGame } from "../account/accounts";
 import type { PublicProfile } from "../account/protocol";
 import { ApiFailure } from "../lib/api";
 import { database, isDuplicateKey } from "../lib/mongo";
+import { MATCHMAKING } from "../ranked/config";
+import type { RankedRating, RatingChange } from "../ranked/protocol";
+import { rateRankedGame } from "../ranked/rate";
 import {
   applyMove,
   fullClocks,
@@ -89,6 +92,11 @@ type Room = {
   presence: Record<string, Record<string, number>>;
   /** Per seat token: when its last page closed (or when it took the seat) */
   lastSeen: Record<string, number>;
+  /** A ranked game (made by the matchmaking): the ratings of both players before it.
+   * Missing on friend rooms. */
+  ranked?: Record<Side, RankedRating> | null;
+  /** Ranked game rated: the ratings before and after */
+  ratings?: Record<Side, RatingChange> | null;
 };
 
 /** Saved by every change (presence and lastSeen are saved by the pages) */
@@ -172,6 +180,9 @@ const viewFor = (room: Room, you: Side, profiles: Map<string, PublicProfile>): R
     outcome: room.outcome,
     moves: room.moves,
     recorded: room.recorded,
+    ranked: room.ranked ?? null,
+    ratings: room.ratings ?? null,
+    claimAfter: claimAfter(room),
   };
 };
 
@@ -210,6 +221,8 @@ type Effects = {
   seen: string[];
   /** The round ended and counts for the stats */
   finished: FinishedGame | null;
+  /** That round is a ranked game, to rate */
+  rate: { round: number } | null;
   /** The room is closed */
   deleted: boolean;
   /** Nothing changed: nothing to save */
@@ -228,7 +241,14 @@ const changeRoom = async <T>(
   for (let i = 0; i < MAX_WRITE_TRIES; i++) {
     const room = (await readRoom(code)) ?? fail("not-found");
     const now = Date.now();
-    const effects: Effects = { seen: [], finished: null, deleted: false, unchanged: false, error: null };
+    const effects: Effects = {
+      seen: [],
+      finished: null,
+      rate: null,
+      deleted: false,
+      unchanged: false,
+      error: null,
+    };
     const result = change(room, now, effects);
     if (effects.unchanged) return result;
 
@@ -247,7 +267,9 @@ const changeRoom = async <T>(
     wakeUp(code);
     if (effects.finished) {
       try {
-        await recordGame(effects.finished);
+        // A ranked game is rated first, so its history entry has the points won or lost
+        const ratings = effects.rate ? await rateRankedGame(code, effects.rate.round, effects.finished) : null;
+        await recordGame(effects.finished, ratings);
       } catch (e) {
         // The game goes on without stats rather than failing on an account error
         console.error("Statistiques non enregistrées", e);
@@ -299,7 +321,14 @@ const endGame = (room: Room, effects: Effects, outcome: NonNullable<Outcome>, re
     players,
     boards: { X: countBoards(room.game.winners, "X"), O: countBoards(room.game.winners, "O") },
   };
+  if (room.ranked && room.recorded) effects.rate = { round: room.round };
 };
+
+/** How long the other player must have been away before the win can be claimed: in a
+ * ranked game before both players have moved, a no-show is left quickly (the game is
+ * then cancelled: fewer than 2 moves never count) */
+const claimAfter = (room: Room) =>
+  room.ranked && room.moves < 2 ? MATCHMAKING.noShowSeconds * 1000 : CLAIM_AFTER_MS;
 
 // --- Public API ---
 
@@ -355,6 +384,58 @@ export const createRoom = async (body: unknown, userId: string | null): Promise<
       if (!isDuplicateKey(e)) throw e;
     }
   }
+};
+
+/** Ranked game between two accounts, made by the matchmaking: both seats taken, sides
+ * given, the chrono running from the start (nobody can stall before the first move).
+ * Returns the room code and each player's seat token. */
+export const createRankedRoom = async (players: Record<Side, { id: string; rating: RankedRating }>) => {
+  const rooms = await roomsCollection();
+  if ((await rooms.countDocuments({ expireAt: { $gt: new Date() } }, { limit: MAX_ROOMS })) >= MAX_ROOMS)
+    fail("too-many-rooms");
+  const seats = { X: newSeat(players.X.id), O: newSeat(players.O.id) };
+  const clock = MATCHMAKING.clockSeconds;
+  for (;;) {
+    const now = Date.now();
+    const room: Room = {
+      _id: newCode(),
+      v: 0,
+      createdAt: now,
+      lastActivity: now,
+      expireAt: expiry(now, now),
+      clockLimit: clock,
+      seats,
+      round: 1,
+      game: newGameState(),
+      clocks: fullClocks(clock),
+      turnStartedAt: clock > 0 ? now : null,
+      outcome: null,
+      moves: 0,
+      recorded: false,
+      presence: {},
+      // Both count as just seen until their page opens
+      lastSeen: { [seats.X.token]: now, [seats.O.token]: now },
+      ranked: { X: players.X.rating, O: players.O.rating },
+      ratings: null,
+    };
+    try {
+      await rooms.insertOne(room);
+      return { code: room._id, tokens: { X: seats.X.token, O: seats.O.token }, expireAt: room.expireAt };
+    } catch (e) {
+      if (!isDuplicateKey(e)) throw e;
+    }
+  }
+};
+
+/** The game of this room is still on (for a player coming back to the ranked page) */
+export const isRoomPlaying = async (code: string) => {
+  const room = await readRoom(code);
+  return !!room && !room.outcome;
+};
+
+/** Drops a ranked room the matchmaking could not hand to both players */
+export const discardRoom = async (code: string) => {
+  await (await roomsCollection()).deleteOne({ _id: code, moves: 0 });
 };
 
 const isIndex = (n: unknown) => typeof n === "number" && Number.isInteger(n) && n >= 0 && n < 9;
@@ -419,12 +500,14 @@ export const performAction = (code: string, body: unknown, userId: string | null
         // The other player has been away for long: they lose by giving up
         if (!opponent) fail("waiting");
         if (room.outcome) fail("game-over");
-        if ((offlineFor(room, opponent!, now) ?? 0) < CLAIM_AFTER_MS) fail("not-claimable");
+        if ((offlineFor(room, opponent!, now) ?? 0) < claimAfter(room)) fail("not-claimable");
         settleClock(room, now, effects);
         endGame(room, effects, { winner: side, reason: "claim" });
         break;
       }
       case "rematch": {
+        // A ranked game is one game: the players look for the next one in the queue
+        if (room.ranked) fail("bad-request");
         if (!room.outcome) fail("not-over");
         if (!opponent || opponent.left) fail("opponent-left");
         room.seats[side]!.rematch = true;

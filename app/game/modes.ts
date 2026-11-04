@@ -18,6 +18,8 @@ export type GameMode = {
   /** The player picks the AI level (see app/ai/settings.ts) */
   levelOption?: boolean;
   requiresAccount?: boolean;
+  /** The mode has its own page instead of the options screen */
+  href?: string;
 };
 
 export const MODES: GameMode[] = [
@@ -46,9 +48,11 @@ export const MODES: GameMode[] = [
     name: "Classé",
     tagline: "Affronte des joueurs en ligne et grimpe au classement.",
     icon: "trophy",
-    available: false,
+    available: true,
     players: { X: "Toi", O: "Adversaire" },
     requiresAccount: true,
+    // Search for an opponent, rank and leaderboard (see app/ranked/config.ts)
+    href: "/jouer/classe",
   },
   {
     id: "local2v2",

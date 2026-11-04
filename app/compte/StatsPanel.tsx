@@ -1,6 +1,5 @@
 import styles from "./Compte.module.css";
 import ui from "../ui/common.module.css";
-import Badge from "../ui/Badge";
 import type { Stats } from "../account/protocol";
 import { percent, plural } from "./format";
 
@@ -23,7 +22,7 @@ const StatsPanel = ({ stats }: { stats: Stats }) => {
     <section className={ui.section}>
       <div className={styles.sectionHeader}>
         <h2 className={ui.sectionTitle}>Statistiques</h2>
-        <span className={styles.sectionNote}>Parties en ligne avec un ami</span>
+        <span className={styles.sectionNote}>Parties en ligne, classées comprises</span>
       </div>
       <div className={styles.stats}>
         {tiles.map((t) => (
@@ -55,10 +54,6 @@ const StatsPanel = ({ stats }: { stats: Stats }) => {
           </p>
         </div>
       )}
-      <p className={styles.soon}>
-        <span>Classement et parties classées</span>
-        <Badge />
-      </p>
     </section>
   );
 };

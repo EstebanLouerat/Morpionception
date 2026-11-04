@@ -40,6 +40,18 @@
 .x .symbol {
   background: var(--primary-x);
 }
+/* The crown of a top 3 player sits on their symbol */
+.crown {
+  position: absolute;
+  top: -15px;
+  left: 50%;
+  z-index: 1;
+  transform: translateX(-50%) rotate(-12deg);
+}
+.rankEmblem {
+  flex-shrink: 0;
+}
+
 /* On the outer corner of the symbol: takes no room from the name on small screens */
 .avatarBadge {
   position: absolute;
@@ -60,6 +72,7 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
+  container-type: inline-size;
 }
 .name {
   overflow: hidden;
@@ -69,10 +82,28 @@
   color: var(--text);
 }
 .status {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
   font-size: 0.75rem;
   font-weight: 700;
   white-space: nowrap;
   color: var(--text-muted);
+}
+.o .status {
+  flex-direction: row-reverse;
+}
+/* Never runs into the clock: cut with an ellipsis instead */
+.statusText {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* Phones: the emblem alone says the rank */
+@container (max-width: 84px) {
+  .rankText {
+    display: none;
+  }
 }
 
 .active {

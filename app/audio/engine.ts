@@ -15,7 +15,11 @@ export type Fx =
   | "boardDraw"
   | "gameWin"
   | "gameLose"
-  | "gameDraw";
+  | "gameDraw"
+  | "matchFound"
+  | "pointsTick"
+  | "rankUp"
+  | "rankDown";
 
 // Loudest gain of each bus when its slider is at 100%
 const FX_MAX_GAIN = 0.7;
@@ -135,6 +139,26 @@ const FX: Record<Fx, (t: number) => void> = {
   },
   gameDraw: (t) =>
     arpeggio(t, [64, 62, 60, 55], 0.18, 0.35, { type: "triangle", gain: 0.2 }),
+  // Ranked: an opponent found, rating points counting, a new rank won or lost
+  matchFound: (t) => {
+    arpeggio(t, [67, 74], 0.1, 0.18, { type: "square", gain: 0.08 });
+    tone(fxBus, t + 0.22, midiToFreq(79), 0.4, { type: "triangle", gain: 0.2 });
+  },
+  pointsTick: (t) => tone(fxBus, t, 1568, 0.035, { gain: 0.05 }),
+  rankUp: (t) => {
+    // A rising sweep, then a bright chord that rings
+    tone(fxBus, t, 220, 0.5, { type: "sawtooth", gain: 0.05, slideTo: 880 });
+    arpeggio(t + 0.45, [72, 76, 79, 84, 88], 0.08, 0.4, { type: "square", gain: 0.07 });
+    [72, 79, 84, 88].forEach((n) =>
+      tone(fxBus, t + 0.9, midiToFreq(n), 1.6, { type: "triangle", gain: 0.13, attack: 0.03 })
+    );
+  },
+  rankDown: (t) => {
+    // A crack, then a falling line
+    tone(fxBus, t, 180, 0.08, { type: "square", gain: 0.1, slideTo: 60 });
+    tone(fxBus, t + 0.05, 140, 0.1, { type: "square", gain: 0.06, slideTo: 50 });
+    arpeggio(t + 0.3, [64, 61, 57, 52], 0.22, 0.45, { type: "triangle", gain: 0.18 });
+  },
 };
 
 export const playFx = (name: Fx, delay = 0) => {

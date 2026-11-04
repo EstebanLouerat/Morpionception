@@ -1,0 +1,147 @@
+.lead {
+  font-size: 1.1rem;
+}
+.link {
+  color: var(--primary-x);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.error {
+  color: #e5484d;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.cardHeader {
+  position: relative;
+}
+.cardCrown {
+  position: absolute;
+  top: -14px;
+  left: 30px;
+  transform: rotate(-14deg);
+}
+
+/* --- Search --- */
+.search {
+  align-items: center;
+  text-align: center;
+}
+.searchBody {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.9rem;
+  width: 100%;
+}
+.radar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 140px;
+  height: 140px;
+}
+.radar > span {
+  position: absolute;
+  inset: 0;
+  border: 3px solid var(--primary-x);
+  border-radius: 50%;
+  opacity: 0;
+  animation: ping 2.4s ease-out infinite;
+}
+.radar > span:nth-child(2) {
+  animation-delay: 0.8s;
+}
+.radar > span:nth-child(3) {
+  animation-delay: 1.6s;
+}
+@keyframes ping {
+  from {
+    transform: scale(0.35);
+    opacity: 0.8;
+  }
+  to {
+    transform: scale(1);
+    opacity: 0;
+  }
+}
+
+/* --- Opponent found --- */
+.versus {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+}
+.found {
+  font-size: 1.3rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--primary-x);
+}
+.versusRow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  width: 100%;
+}
+.versusPlayer {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+}
+.versusPlayer strong {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.versusAvatar {
+  position: relative;
+  display: flex;
+}
+.versusCrown {
+  position: absolute;
+  top: -15px;
+  left: 50%;
+  transform: translateX(-50%) rotate(-10deg);
+}
+.versusRank {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+.versusVs {
+  flex-shrink: 0;
+  font-size: 2rem;
+  font-weight: 900;
+  font-style: italic;
+  color: var(--primary-o);
+}
+.versusNote {
+  color: var(--text-muted);
+}
+
+.rules {
+  gap: 0.6rem;
+  padding-left: 2.6rem;
+  line-height: 1.45;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .radar > span {
+    animation: none;
+    opacity: 0.4;
+  }
+}

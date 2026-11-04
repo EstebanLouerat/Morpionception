@@ -37,7 +37,8 @@ export default function Jouer() {
                 key={mode.id}
                 // Modes with options go through the options screen first
                 href={
-                  hasOptions(mode) ? `/jouer/partie?mode=${mode.id}` : `/game?mode=${mode.id}`
+                  mode.href ??
+                  (hasOptions(mode) ? `/jouer/partie?mode=${mode.id}` : `/game?mode=${mode.id}`)
                 }
                 className={styles.card}
                 onClick={() => playFx("click")}

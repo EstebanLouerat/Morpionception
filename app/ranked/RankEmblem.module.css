@@ -1,0 +1,38 @@
+.emblem {
+  flex-shrink: 0;
+  overflow: visible;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.25));
+}
+
+/* The top tier shimmers, its rays turn slowly */
+.mastermind {
+  animation: shimmer 4s linear infinite;
+}
+.rays {
+  transform-origin: 50px 50px;
+  animation: spin 12s linear infinite;
+  opacity: 0.55;
+}
+.maitre {
+  filter: drop-shadow(0 0 6px rgba(255, 90, 122, 0.55));
+}
+
+@keyframes shimmer {
+  from {
+    filter: drop-shadow(0 0 6px #b388ff) hue-rotate(0deg);
+  }
+  to {
+    filter: drop-shadow(0 0 6px #b388ff) hue-rotate(360deg);
+  }
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mastermind,
+  .rays {
+    animation: none;
+  }
+}

@@ -4,7 +4,9 @@ import { randomUUID } from "node:crypto";
 import type { NextRequest } from "next/server";
 import type { OutcomeReason, Side } from "../game/rules";
 import { ApiFailure } from "../lib/api";
-import { isDuplicateKey } from "../lib/mongo";
+import { database, isDuplicateKey } from "../lib/mongo";
+import { crowns, forgetLeaderboard, positionOf } from "../ranked/leaderboard";
+import type { RankedSummary, RatingChange } from "../ranked/protocol";
 import {
   burnPasswordCheck,
   countPasswordFailure,
@@ -74,31 +76,58 @@ export const publicProfile = (user: StoredUser): PublicProfile => ({
   color: user.color,
 });
 
-/** Profiles of these accounts by id; deleted accounts are missing */
+/** Profiles of these accounts by id, with the crowns of the 3 best ranked players;
+ * deleted accounts are missing */
 export const profilesOf = async (ids: (string | null | undefined)[]) => {
   const wanted = [...new Set(ids.filter((id): id is string => !!id))];
   const profiles = new Map<string, PublicProfile>();
   if (!wanted.length) return profiles;
-  const found = await (await usersCollection())
-    .find({ id: { $in: wanted } }, { projection: { _id: 0, id: 1, pseudo: 1, avatar: 1, color: 1 } })
-    .toArray();
-  for (const user of found) profiles.set(user.id, publicProfile(user));
+  const [found, crownOf] = await Promise.all([
+    (await usersCollection())
+      .find({ id: { $in: wanted } }, { projection: { _id: 0, id: 1, pseudo: 1, avatar: 1, color: 1 } })
+      .toArray(),
+    crowns(),
+  ]);
+  for (const user of found) profiles.set(user.id, withCrown(publicProfile(user), crownOf.get(user.id)));
   return profiles;
 };
 
+const withCrown = (profile: PublicProfile, crown: PublicProfile["crown"]) =>
+  crown ? { ...profile, crown } : profile;
+
+const rankedSummary = async (user: StoredUser): Promise<RankedSummary | null> => {
+  const ranked = user.ranked;
+  if (!ranked) return null;
+  return {
+    rating: Math.round(ranked.rating),
+    games: ranked.games,
+    wins: ranked.wins ?? 0,
+    losses: ranked.losses ?? 0,
+    draws: ranked.draws ?? 0,
+    peak: Math.round(ranked.peak ?? ranked.rating),
+    position: await positionOf(user),
+    history: (ranked.history ?? []).map(Math.round),
+  };
+};
+
 export const accountView = async (user: StoredUser): Promise<AccountView> => {
-  const opponents = await profilesOf(user.recent.map((game) => game.opponentId));
+  const [opponents, crownOf, ranked] = await Promise.all([
+    profilesOf(user.recent.map((game) => game.opponentId)),
+    crowns(),
+    rankedSummary(user),
+  ]);
   const opponentOf = (opponentId: string | null): GameRecord["opponent"] => {
     if (!opponentId) return { kind: "guest" };
     const profile = opponents.get(opponentId);
     return profile ? { kind: "player", ...profile } : { kind: "deleted" };
   };
   return {
-    ...publicProfile(user),
+    ...withCrown(publicProfile(user), crownOf.get(user.id)),
     id: user.id,
     createdAt: user.createdAt,
     stats: user.stats,
     recent: user.recent.map(({ opponentId, ...game }) => ({ ...game, opponent: opponentOf(opponentId) })),
+    ranked,
   };
 };
 
@@ -246,6 +275,9 @@ export const deleteAccount = async (req: NextRequest, user: StoredUser, body: un
   const confirmed = await confirmPassword(req, user, (body as { password?: unknown } | null)?.password);
   await (await usersCollection()).deleteOne({ id: confirmed.id });
   await (await sessionsCollection()).deleteMany({ userId: confirmed.id });
+  // A ranked search in progress goes with the account
+  await (await database()).collection<{ _id: string }>("queue").deleteOne({ _id: confirmed.id });
+  forgetLeaderboard();
 };
 
 // --- Stats ---
@@ -259,9 +291,13 @@ export type FinishedGame = {
   boards: Record<Side, number>;
 };
 
-/** Adds an online game to the stats of the accounts that played it.
- * Returns false when it cannot count (both sides are the same account). */
-export const recordGame = async (game: FinishedGame) => {
+/** Adds an online game to the stats of the accounts that played it (with the rating
+ * points of each side for a ranked game). Returns false when it cannot count (both
+ * sides are the same account). */
+export const recordGame = async (
+  game: FinishedGame,
+  ratings: Record<Side, RatingChange> | null = null
+) => {
   const sides: Side[] = ["X", "O"];
   // A player against their own account (two devices) does not count
   if (game.players.X && game.players.X === game.players.O) return false;
@@ -289,6 +325,9 @@ export const recordGame = async (game: FinishedGame) => {
         side,
         opponentId: accountOf(other),
         boards: { mine: game.boards[side], theirs: game.boards[other] },
+        ...(ratings && {
+          ranked: { delta: Math.round(ratings[side].after) - Math.round(ratings[side].before) },
+        }),
       };
       const asSide = side === "X" ? "asX" : "asO";
       const ifResult = (wanted: GameResult, field: string) =>

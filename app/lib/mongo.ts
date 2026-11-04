@@ -7,8 +7,9 @@ import { ApiFailure } from "./api";
 // Kept on globalThis so every route and hot reload share one connection pool
 const cache = globalThis as typeof globalThis & { morpionDb?: Promise<Db> };
 
-/** Indexes the app relies on: unique pseudos, and documents MongoDB drops by itself
- * once expired (sessions, password attempts, rooms) */
+/** Indexes the app relies on: unique pseudos, the leaderboard, and documents MongoDB
+ * drops by itself once expired (sessions, password attempts, rooms, ranked searches
+ * and the log of ranked games) */
 const createIndexes = (db: Db) =>
   Promise.all([
     db.collection("users").createIndex({ id: 1 }, { unique: true }),
@@ -18,6 +19,11 @@ const createIndexes = (db: Db) =>
     db.collection("attempts").createIndex({ key: 1, at: 1 }),
     db.collection("attempts").createIndex({ at: 1 }, { expireAfterSeconds: 60 * 60 }),
     db.collection("rooms").createIndex({ expireAt: 1 }, { expireAfterSeconds: 0 }),
+    // Ranked: the leaderboard, the search queue, the log of ranked games
+    db.collection("users").createIndex({ "ranked.rating": -1 }),
+    db.collection("queue").createIndex({ expireAt: 1 }, { expireAfterSeconds: 0 }),
+    db.collection("rankedGames").createIndex({ pair: 1, at: 1 }),
+    db.collection("rankedGames").createIndex({ expireAt: 1 }, { expireAfterSeconds: 0 }),
   ]);
 
 const connect = async () => {

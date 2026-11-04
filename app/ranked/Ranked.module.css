@@ -1,0 +1,178 @@
+/* --- Rank card (ranked page, account page) --- */
+.rankCard {
+  display: flex;
+  align-items: center;
+  gap: 1.1rem;
+}
+.rankInfo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+.rankLabel {
+  font-size: 1.35rem;
+  line-height: 1.2;
+}
+/* Tier name in its color: the deep shade on the light theme, the bright one on the dark
+   theme, so it stays readable on both */
+.tierName {
+  color: var(--tier-dark, var(--text));
+  font-weight: 800;
+}
+:global(:root[data-theme="dark"]) .tierName {
+  color: var(--tier, var(--text));
+}
+.rankPoints {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.rankHint {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+.progress {
+  height: 10px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--surface-hover);
+}
+.progress > span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--primary-x);
+  transition: width 0.6s ease-out;
+}
+
+/* --- Points and new rank after a ranked game (end modal) --- */
+.change {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 1rem;
+  padding: 1rem 1rem 1.1rem;
+  border-radius: 16px;
+  background: var(--surface-muted);
+  transition: box-shadow 0.5s;
+}
+.changeUp {
+  box-shadow: 0 0 0 2px var(--tier), 0 0 28px color-mix(in srgb, var(--tier) 55%, transparent);
+}
+.changeDown {
+  box-shadow: 0 0 0 2px #e5484d55;
+}
+.stage {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 140px;
+  height: 128px;
+  perspective: 600px;
+}
+.stageEmblem {
+  position: relative;
+  z-index: 1;
+  display: flex;
+}
+/* Rays of light turning behind a new rank */
+.rays {
+  position: absolute;
+  inset: -30px;
+  border-radius: 50%;
+  background: repeating-conic-gradient(
+    from 0deg,
+    color-mix(in srgb, var(--tier) 75%, transparent) 0deg 10deg,
+    transparent 10deg 30deg
+  );
+  mask: radial-gradient(circle, #000 30%, transparent 70%);
+  animation: turn 6s linear infinite;
+}
+@keyframes turn {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.cracks {
+  position: absolute;
+  inset: 0;
+  fill: none;
+  stroke: #1d1f24;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.banner {
+  font-size: 1.35rem;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--tier-dark);
+  text-shadow: 0 2px 12px color-mix(in srgb, var(--tier) 70%, transparent);
+}
+:global(:root[data-theme="dark"]) .banner:not(.bannerDown):not(.bannerMastermind) {
+  color: var(--tier);
+}
+.bannerDown {
+  color: #e5484d;
+  text-shadow: none;
+}
+.bannerMastermind {
+  background: linear-gradient(90deg, #ff5a7a, #ffe066, #4fd6c4, #9b8cff, #ff5a7a);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: none;
+  animation: slide 2s linear infinite;
+}
+@keyframes slide {
+  to {
+    background-position: 200% 0;
+  }
+}
+.changeLabel {
+  font-size: 1.15rem;
+}
+.changePoints {
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+.changePoints strong {
+  color: var(--text);
+  font-size: 1.25rem;
+}
+.deltaUp,
+.deltaDown {
+  display: inline-block;
+  margin-left: 0.3rem;
+  padding: 0.05rem 0.45rem;
+  border-radius: 999px;
+  font-weight: 800;
+  color: #fff;
+}
+.deltaUp {
+  background: #16a085;
+}
+.deltaDown {
+  background: #e5484d;
+}
+.change .progress {
+  width: 100%;
+  max-width: 260px;
+}
+.waitingRating {
+  margin-top: 1rem;
+  color: var(--text-muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rays,
+  .bannerMastermind {
+    animation: none;
+  }
+}

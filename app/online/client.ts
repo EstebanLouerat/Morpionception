@@ -27,7 +27,8 @@ const writeTokens = (tokens: StoredTokens) => {
 
 export const getRoomToken = (code: string): string | null => readTokens()[code]?.token ?? null;
 
-const saveRoomToken = (code: string, token: string) => {
+/** Keeps the seat token of a room (also for a seat the ranked matchmaking gave) */
+export const saveRoomToken = (code: string, token: string) => {
   const tokens = { ...readTokens(), [code]: { token, at: Date.now() } };
   // Keep only the most recent rooms
   const recent = Object.entries(tokens)

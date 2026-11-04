@@ -12,9 +12,11 @@ import GameScreen from "./GameScreen";
 import { ONLINE_MODE } from "./modes";
 import { applyMove, otherSide, type Clocks, type GameState } from "./rules";
 import { getRoomToken, joinRoom, leaveRoom, sendAction } from "../online/client";
-import { CLAIM_AFTER_MS, ERROR_MESSAGES, type RoomView } from "../online/protocol";
+import { ERROR_MESSAGES, type RoomView } from "../online/protocol";
 import { useRoom } from "../online/useRoom";
 import { useAccount } from "../account/client";
+import RankChange from "../ranked/RankChange";
+import rankedStyles from "../ranked/Ranked.module.css";
 
 // A confirmation button goes back to normal after this delay
 const CONFIRM_MS = 3000;
@@ -72,6 +74,10 @@ type OnlineBoardProps = {
 const OnlineBoard = ({ code, view, receivedAt, connected }: OnlineBoardProps) => {
   const router = useRouter();
   const { you, outcome, players } = view;
+  // A ranked game: one game, rated, no rematch (the next one is found by the search)
+  const ranked = !!view.ranked;
+  // Ended before both players moved (a no-show): cancelled, not rated
+  const cancelled = !!outcome && !view.recorded && view.moves < 2;
   const friend = otherSide(you);
   const me = players[you];
   const them = players[friend];
@@ -125,8 +131,10 @@ const OnlineBoard = ({ code, view, receivedAt, connected }: OnlineBoardProps) =>
       clocks[side] = Math.max(0, clocks[side] - elapsed);
     }
   }
-  // Away long enough: the win can be claimed
-  const canClaim = friendAway && (them.offlineFor ?? 0) + elapsed >= CLAIM_AFTER_MS;
+  // Away long enough: the win can be claimed (or, in a ranked game nobody has started,
+  // the game cancelled)
+  const canClaim = friendAway && (them.offlineFor ?? 0) + elapsed >= view.claimAfter;
+  const noShow = ranked && view.moves < 2;
 
   // Abandoning (or quitting during the game) asks for a second click
   const [confirming, setConfirming] = useState<"resign" | "leave" | null>(null);
@@ -145,17 +153,25 @@ const OnlineBoard = ({ code, view, receivedAt, connected }: OnlineBoardProps) =>
   const claim = () => sendAction(code, { type: "claim" });
   const quit = () => {
     leaveRoom(code);
-    router.push("/jouer");
+    router.push(ranked ? "/jouer/classe" : "/jouer");
+  };
+  // Ranked: straight back to the search
+  const playAgain = () => {
+    leaveRoom(code);
+    router.push("/jouer/classe?recherche=1");
   };
   const rematch = () => sendAction(code, { type: "rematch" });
 
   const mode = {
     ...ONLINE_MODE,
+    name: ranked ? "Classé" : ONLINE_MODE.name,
     players: you === "X" ? { X: "Toi", O: friendName } : { X: friendName, O: "Toi" },
   };
 
   let endTitle = "Égalité !";
-  if (outcome?.winner) {
+  if (ranked && cancelled) {
+    endTitle = "Partie annulée";
+  } else if (outcome?.winner) {
     const won = outcome.winner === you;
     if (outcome.reason === "timeout") {
       endTitle = won ? "Tu as gagné au temps !" : `${friendName} a gagné au temps !`;
@@ -177,6 +193,8 @@ const OnlineBoard = ({ code, view, receivedAt, connected }: OnlineBoardProps) =>
   let notice: string | null = null;
   if (!connected) notice = "Connexion perdue, reconnexion…";
   else if (them.left) notice = `${friendName} a quitté la partie.`;
+  else if (noShow && canClaim) notice = `${friendName} ne s'est pas présenté : tu peux annuler la partie.`;
+  else if (noShow && friendAway) notice = `En attente de ${friendInSentence}…`;
   else if (canClaim) notice = `${friendName} est hors ligne depuis plus de 2 minutes.`;
   else if (friendAway) notice = `${friendName} est hors ligne, attends son retour…`;
 
@@ -222,11 +240,18 @@ const OnlineBoard = ({ code, view, receivedAt, connected }: OnlineBoardProps) =>
           : `À ${friendInSentence} de jouer`
       }
       profiles={{ X: players.X.profile, O: players.O.profile }}
+      ranks={view.ranked}
       notice={notice}
       controls={
         gameOver ? (
           <>
-            {rematchButton(false)}
+            {ranked ? (
+              <Button className={styles.ctrlBtn} onClick={playAgain}>
+                Rejouer
+              </Button>
+            ) : (
+              rematchButton(false)
+            )}
             <Button className={styles.ctrlBtn} variant="secondary" onClick={quit}>
               Quitter
             </Button>
@@ -235,7 +260,7 @@ const OnlineBoard = ({ code, view, receivedAt, connected }: OnlineBoardProps) =>
           <>
             {canClaim && (
               <Button className={styles.ctrlBtn} onClick={claim}>
-                Réclamer la victoire
+                {noShow ? "Annuler la partie" : "Réclamer la victoire"}
               </Button>
             )}
             <Button
@@ -266,18 +291,38 @@ const OnlineBoard = ({ code, view, receivedAt, connected }: OnlineBoardProps) =>
               {endTitle}
             </span>
           </h2>
-          <p className={styles.modalNote}>
-            {them.left
-              ? `${friendName} a quitté le salon.`
-              : me.rematch
-              ? `En attente de ${friendInSentence}…`
-              : them.rematch
-              ? `${friendName} veut une revanche ! Les camps seront inversés.`
-              : "En cas de revanche, les camps sont inversés."}
-          </p>
-          <p className={styles.modalNote}>{statsNote}</p>
+          {ranked ? (
+            view.ratings?.[you] ? (
+              <RankChange change={view.ratings[you]} />
+            ) : cancelled || (outcome && !view.recorded) || view.unrated ? (
+              <p className={styles.modalNote}>
+                {cancelled
+                  ? "Moins de 2 coups joués : pas de points gagnés ni perdus."
+                  : view.unrated
+                  ? "Partie non classée : pas de points gagnés ni perdus."
+                  : "Partie non comptée : pas de points gagnés ni perdus."}
+              </p>
+            ) : (
+              <p className={rankedStyles.waitingRating} role="status">
+                Calcul du classement…
+              </p>
+            )
+          ) : (
+            <>
+              <p className={styles.modalNote}>
+                {them.left
+                  ? `${friendName} a quitté le salon.`
+                  : me.rematch
+                  ? `En attente de ${friendInSentence}…`
+                  : them.rematch
+                  ? `${friendName} veut une revanche ! Les camps seront inversés.`
+                  : "En cas de revanche, les camps sont inversés."}
+              </p>
+              <p className={styles.modalNote}>{statsNote}</p>
+            </>
+          )}
           <div className={styles.modalBtns}>
-            {rematchButton(true)}
+            {ranked ? <Button onClick={playAgain}>Rejouer</Button> : rematchButton(true)}
             <Button variant="secondary" onClick={quit}>
               Quitter
             </Button>

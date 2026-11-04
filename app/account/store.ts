@@ -3,6 +3,7 @@
 // at once, so nothing about an account is kept in memory between two requests.
 import "server-only";
 import { database } from "../lib/mongo";
+import type { Rating } from "../ranked/rating";
 import { emptyStats, type GameRecord, type Stats } from "./protocol";
 import { type AvatarId, type ColorId } from "./profile";
 
@@ -14,6 +15,17 @@ export type StoredPassword = { N: number; r: number; p: number; salt: string; ha
 export type StoredGameRecord = Omit<GameRecord, "opponent"> & {
   /** Account of the opponent, null for a guest */
   opponentId: string | null;
+};
+
+/** Ranked play of an account: its Glicko rating and results */
+export type StoredRanked = Rating & {
+  wins: number;
+  losses: number;
+  draws: number;
+  /** Best rating once placed */
+  peak: number;
+  /** Ratings after the latest games, oldest first */
+  history: number[];
 };
 
 export type StoredUser = {
@@ -28,6 +40,8 @@ export type StoredUser = {
   stats: Stats;
   /** Latest games first */
   recent: StoredGameRecord[];
+  /** Absent before the first ranked game */
+  ranked?: StoredRanked;
 };
 
 export type StoredSession = {

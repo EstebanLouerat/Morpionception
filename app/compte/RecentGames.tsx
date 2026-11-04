@@ -55,6 +55,15 @@ const RecentGames = ({ games }: { games: GameRecord[] }) => (
                   <Opponent opponent={game.opponent} />
                 </span>
                 <small className={ui.muted}>
+                  {game.ranked && (
+                    <span
+                      className={`${styles.rankedTag} ${
+                        game.ranked.delta >= 0 ? styles.win : styles.loss
+                      }`}
+                    >
+                      Classé {game.ranked.delta >= 0 ? `+${game.ranked.delta}` : game.ranked.delta}
+                    </span>
+                  )}
                   {REASON_LABELS[game.reason]} · en {game.side} · {game.boards.mine}–
                   {game.boards.theirs} en morpions
                 </small>

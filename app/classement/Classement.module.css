@@ -1,0 +1,161 @@
+.empty {
+  align-items: center;
+  text-align: center;
+}
+
+/* --- Podium --- */
+.podium {
+  display: grid;
+  grid-template-columns: 1fr 1.15fr 1fr;
+  align-items: end;
+  gap: 0.6rem;
+  list-style: none;
+}
+.step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  min-width: 0;
+  text-align: center;
+}
+.podiumAvatar {
+  position: relative;
+  display: flex;
+  margin-top: 1.2rem;
+}
+.podiumCrown {
+  position: absolute;
+  top: -24px;
+  left: 50%;
+  transform: translateX(-50%) rotate(-8deg);
+}
+.podiumName {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.podiumRating {
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.pedestal {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  width: 100%;
+  padding-top: 0.4rem;
+  border-radius: 12px 12px 4px 4px;
+  font-size: 1.6rem;
+  font-weight: 900;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+.step1 .pedestal {
+  height: 92px;
+  background: linear-gradient(#f7c948, #a8740c);
+}
+.step2 .pedestal {
+  height: 66px;
+  background: linear-gradient(#c9d3dd, #6b7a89);
+}
+.step3 .pedestal {
+  height: 48px;
+  background: linear-gradient(#d08a4c, #7a4419);
+}
+
+/* --- List --- */
+.list {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: 0 4px 12px var(--shadow);
+  list-style: none;
+}
+.row {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.65rem 0.9rem;
+}
+.list .row + .row {
+  border-top: 1px solid var(--border);
+}
+.mine {
+  background: color-mix(in srgb, var(--primary-x) 14%, transparent);
+}
+.step.mine {
+  background: none;
+}
+.step.mine .podiumName {
+  color: var(--primary-x);
+}
+.position {
+  flex-shrink: 0;
+  width: 2.6rem;
+  font-weight: 800;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+.player {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.player strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.player small {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+.youTag {
+  color: var(--primary-x);
+  font-weight: 700;
+}
+.rank {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.rankText {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+.rankText strong {
+  font-size: 1rem;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Your place, when beyond the list */
+.you {
+  position: sticky;
+  bottom: 0.75rem;
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: 0 4px 16px var(--shadow);
+}
+.you > p {
+  padding: 0.9rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+@media (max-width: 420px) {
+  .rankText span {
+    display: none;
+  }
+}

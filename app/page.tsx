@@ -12,6 +12,7 @@ export default function Home() {
       <header className={styles.topBar}>
         <AccountLink />
         <div className={styles.topBarRight}>
+          <IconLink href="/classement" icon="trophy" label="Classement" />
           <IconLink href="/amis" icon="users" label="Amis" />
           <IconLink href="/parametres" icon="gear" label="Paramètres" />
         </div>

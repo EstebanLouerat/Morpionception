@@ -1,9 +1,13 @@
 // Messages exchanged between the account pages and the account API (app/api/account).
 import type { OutcomeReason, Side } from "../game/rules";
+import type { RankedSummary } from "../ranked/protocol";
 import type { AvatarId, ColorId } from "./profile";
 
+/** Place in the ranked leaderboard of the 3 best players: their crown */
+export type Crown = 1 | 2 | 3;
+
 /** What everybody can see of a player (e.g. the opponent in an online game) */
-export type PublicProfile = { pseudo: string; avatar: AvatarId; color: ColorId };
+export type PublicProfile = { pseudo: string; avatar: AvatarId; color: ColorId; crown?: Crown };
 
 /** Online games of a player, counted when each game ends */
 export type Stats = {
@@ -30,6 +34,8 @@ export type GameRecord = {
   opponent: ({ kind: "player" } & PublicProfile) | { kind: "guest" } | { kind: "deleted" };
   /** Small boards won by each player */
   boards: { mine: number; theirs: number };
+  /** A ranked game: rating points won or lost */
+  ranked?: { delta: number };
 };
 
 export type AccountView = PublicProfile & {
@@ -38,6 +44,8 @@ export type AccountView = PublicProfile & {
   stats: Stats;
   /** Latest games first */
   recent: GameRecord[];
+  /** Ranked play, null before the first ranked game */
+  ranked: RankedSummary | null;
 };
 
 export type AccountError =

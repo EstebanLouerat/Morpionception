@@ -4,7 +4,11 @@ import Icon from "../ui/Icon";
 import { ButtonLink } from "../ui/Button";
 import Avatar from "../account/Avatar";
 import type { GameRecord } from "../account/protocol";
+import Pager, { usePages } from "../ui/Pager";
 import { REASON_LABELS, relativeTime } from "./format";
+
+// Games per page: the list fits on a phone screen
+const PAGE_SIZE = 5;
 
 const RESULT = {
   win: { short: "V", label: "Victoire", className: styles.win },
@@ -29,8 +33,10 @@ const Opponent = ({ opponent }: { opponent: GameRecord["opponent"] }) =>
     </>
   );
 
-/** Latest online games, newest first */
-const RecentGames = ({ games }: { games: GameRecord[] }) => (
+/** Latest online games, newest first, page by page */
+const RecentGames = ({ games }: { games: GameRecord[] }) => {
+  const shown = usePages(games, PAGE_SIZE);
+  return (
   <section className={ui.section}>
     <h2 className={ui.sectionTitle}>Dernières parties</h2>
     {games.length === 0 ? (
@@ -41,8 +47,9 @@ const RecentGames = ({ games }: { games: GameRecord[] }) => (
         </ButtonLink>
       </div>
     ) : (
-      <ol className={styles.games}>
-        {games.map((game) => {
+      <>
+      <ol className={styles.games} start={shown.page * PAGE_SIZE + 1}>
+        {shown.items.map((game) => {
           const result = RESULT[game.result];
           return (
             <li key={game.at} className={styles.game}>
@@ -75,8 +82,11 @@ const RecentGames = ({ games }: { games: GameRecord[] }) => (
           );
         })}
       </ol>
+      <Pager page={shown.page} pages={shown.pages} onChange={shown.setPage} label="Pages des parties" />
+      </>
     )}
   </section>
-);
+  );
+};
 
 export default RecentGames;

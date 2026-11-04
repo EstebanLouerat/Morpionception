@@ -23,3 +23,9 @@ export const fetchLeaderboard = () =>
 
 /** How often a searching page says it is still there */
 export const POLL_MS = 1500;
+
+/** "1:05": time spent searching */
+export const formatWait = (ms: number) => {
+  const s = Math.floor(Math.max(0, ms) / 1000);
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+};

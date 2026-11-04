@@ -1,0 +1,13 @@
+.box {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  overflow: hidden;
+}
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(0.75rem, 2.6dvh, 2rem);
+  /* Room for the shadows of the cards */
+  padding: 4px 6px 8px;
+}

@@ -1,0 +1,98 @@
+/* Floats above every page, bottom center, out of the page layout (no scrolling) */
+.pill {
+  position: fixed;
+  left: 50%;
+  bottom: max(0.9rem, env(safe-area-inset-bottom));
+  z-index: 900;
+  translate: -50% 0;
+  width: max-content;
+  max-width: calc(100vw - 2rem);
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.35rem 0.35rem 0.35rem 0.5rem;
+  border-radius: 999px;
+  background: var(--surface);
+  box-shadow:
+    0 0 0 2px var(--primary-x),
+    0 8px 24px var(--shadow);
+}
+.body {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding-right: 0.4rem;
+  color: var(--text);
+  text-decoration: none;
+}
+.text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+.text strong {
+  font-size: 0.9rem;
+}
+.text small {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+}
+.radar {
+  position: relative;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--primary-x);
+}
+.radar::after {
+  content: "";
+  position: absolute;
+  inset: 9px;
+  border-radius: 50%;
+  background: #fff;
+}
+.radar > span {
+  position: absolute;
+  inset: 0;
+  border: 2px solid var(--primary-x);
+  border-radius: 50%;
+  animation: ping 1.8s ease-out infinite;
+}
+.radar > span:nth-child(2) {
+  animation-delay: 0.9s;
+}
+@keyframes ping {
+  from {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  to {
+    transform: scale(2.1);
+    opacity: 0;
+  }
+}
+.cancel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 50%;
+  background: var(--surface-hover);
+  color: var(--text-muted);
+  cursor: pointer;
+}
+@media (hover: hover) {
+  .cancel:hover {
+    color: var(--text);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .radar > span {
+    animation: none;
+    opacity: 0;
+  }
+}

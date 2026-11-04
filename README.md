@@ -17,7 +17,10 @@ Ultimate tic-tac-toe ("morpion" in French) built with Next.js, React and Framer 
   - forced board: one key picks the cell;
   - free choice: first key picks the board, second key picks the cell;
   - `0`, `.`, `Esc` or `Backspace` cancels the board selection.
-- Animations and confetti on victory.
+- Animations and confetti on victory; the last move played is ringed on the board.
+- Every screen fits without scrolling, from small phones (portrait or landscape)
+  to desktops: long pages use tabs, lists are shown page by page, and wide screens
+  get columns (`app/ui/FitToScreen.tsx` zooms out the last few lines if needed).
 - Synthesized sound effects and background music, with volume sliders.
 - Options screen between the mode choice and the game (`/jouer/partie`), which
   can also resume the game in progress.
@@ -42,7 +45,10 @@ Ultimate tic-tac-toe ("morpion" in French) built with Next.js, React and Framer 
 - Ranked mode (`/jouer/classe`, account needed): matchmaking by rating, a
   rating like chess.com's (big jumps for new players that shrink game after game),
   ranks with divisions like Valorant from Bois to Morpion Mastermind, 5 placement
-  games, and animations when you move up or down.
+  games, and animations when you move up or down. The search runs in the
+  background while you browse the site (an indicator shows it on every page), a
+  fullscreen animation opens the game once an opponent is found, and a ranked game
+  still going on brings you back to it.
 - Leaderboard (`/classement`): the top 50 ranked players. The top 3 wear a gold,
   silver or bronze crown on their avatar: on the home page, the account page and
   next to their symbol in every online game.
@@ -229,8 +235,9 @@ server instance). The top 3 get the crowns.
 | `POST /api/ranked/queue`      | `{ action: "join" \| "poll" \| "leave" }` (logged in only) |
 | `GET /api/ranked/leaderboard` | Top players, with their rating and results                 |
 
-A search is kept going by the page asking every 1.5 seconds; a page silent for 10
-seconds is not paired anymore. Players are paired under a lock in MongoDB, so two
+A search is kept going by the site asking every 1.5 seconds, from any page
+(`app/ranked/RankedSearch.tsx`, mounted in the root layout); closing or reloading
+the tab stops it, and a page silent for 10 seconds is not paired anymore. Players are paired under a lock in MongoDB, so two
 server instances never pair the same player twice. Ranked games are ordinary rooms
 (same API and live updates as friend games) that carry both ratings; when one
 ends, the server rates it once and saves the new ratings in the room, so both

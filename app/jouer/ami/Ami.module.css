@@ -143,3 +143,24 @@ input.codeInput::placeholder {
     text-align: center;
   }
 }
+
+/* The side and the chrono: side by side on landscape screens */
+.pickers {
+  display: flex;
+  flex-direction: column;
+  gap: inherit;
+}
+@media (orientation: landscape) and (min-width: 700px) and (max-height: 600px) {
+  .pickers {
+    display: grid;
+    grid-template-columns: 1fr 1.3fr;
+    gap: 1.25rem;
+    align-items: start;
+  }
+}
+/* Very short screens: the buttons say enough */
+@media (max-height: 480px) {
+  .intro {
+    display: none;
+  }
+}

@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import styles from "./Ami.module.css";
 import ui from "../../ui/common.module.css";
 import PageShell from "../../ui/PageShell";
+import Tabs from "../../ui/Tabs";
 import Icon from "../../ui/Icon";
 import { Button } from "../../ui/Button";
 import ClockPicker from "../../game/ClockPicker";
@@ -171,8 +172,8 @@ export default function JouerAmi() {
 
   const inviteSection = (
     <section className={ui.section}>
-      <h2 className={ui.sectionTitle}>Inviter un ami</h2>
       <div className={ui.card}>
+        {hosting && (
         <div className={styles.invite}>
           {seat ? (
             <QrCode
@@ -202,7 +203,9 @@ export default function JouerAmi() {
             </span>
           </div>
         </div>
+        )}
 
+        {hosting && (
         <div className={ui.row}>
           <Button
             variant="secondary"
@@ -229,8 +232,19 @@ export default function JouerAmi() {
             </Button>
           )}
         </div>
-        <SidePicker disabled={hosting} />
-        <ClockPicker disabled={hosting} />
+        )}
+        {/* Chosen before creating the room (then shown in the waiting line) */}
+        {!hosting && (
+          <>
+            <p className={`${ui.muted} ${styles.intro}`}>
+              Un lien, un code et un QR code à partager une fois le salon créé.
+            </p>
+            <div className={styles.pickers}>
+              <SidePicker />
+              <ClockPicker />
+            </div>
+          </>
+        )}
 
         {hosting ? (
           <>
@@ -268,7 +282,6 @@ export default function JouerAmi() {
 
   const joinSection = !hosting && (
     <section className={ui.section}>
-      <h2 className={ui.sectionTitle}>Rejoindre une partie</h2>
       <form className={ui.card} onSubmit={join}>
         <label className={styles.label} htmlFor="room-code">
           Code du salon
@@ -312,8 +325,8 @@ export default function JouerAmi() {
   const here = urlCode && !hosting ? `/jouer/ami?code=${urlCode}` : "/jouer/ami";
 
   return (
-    <PageShell title="Avec un ami" backHref="/jouer">
-      <p className={ui.muted}>
+    <PageShell title="Avec un ami" backHref="/jouer" wide={!hosting}>
+      <p className={`${ui.muted} ${styles.intro}`}>
         {invited
           ? "Un ami t'invite à jouer : rejoins son salon !"
           : "Crée un salon et invite un ami à jouer en ligne, où qu'il soit."}
@@ -344,16 +357,19 @@ export default function JouerAmi() {
           )}
         </p>
       )}
-      {invited ? (
-        <>
-          {joinSection}
-          {inviteSection}
-        </>
+      {hosting ? (
+        inviteSection
       ) : (
-        <>
-          {inviteSection}
-          {joinSection}
-        </>
+        // One at a time on small screens, side by side on wide ones
+        <Tabs
+          label="Créer ou rejoindre un salon"
+          allOnWide
+          initial={invited ? "join" : "create"}
+          tabs={[
+            { id: "create", label: "Créer un salon", content: inviteSection },
+            { id: "join", label: "Rejoindre", content: joinSection },
+          ]}
+        />
       )}
     </PageShell>
   );

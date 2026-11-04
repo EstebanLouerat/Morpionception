@@ -75,3 +75,18 @@
 .row > * {
   flex: 1 1 180px;
 }
+
+/* Sections one above the other, side by side on landscape screens */
+.columns {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(0.75rem, 2.6dvh, 2rem);
+}
+@media (orientation: landscape) and (min-width: 700px) {
+  .columns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+    gap: 1.25rem;
+  }
+}

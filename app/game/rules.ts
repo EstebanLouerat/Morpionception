@@ -14,7 +14,11 @@ export type GameState = {
   currentPlayer: Side;
   /** Board the current player must play in (null = free choice) */
   activeBoard: number | null;
+  /** Cell played last, shown on the board (missing in games saved before it existed) */
+  lastMove?: Move | null;
 };
+
+export type Move = { board: number; cell: number };
 
 /** claim: online, the other player stayed offline too long and the win was claimed */
 export type OutcomeReason = "line" | "draw" | "timeout" | "resign" | "claim";
@@ -44,6 +48,7 @@ export const newGameState = (): GameState => ({
   winners: Array(9).fill(null),
   currentPlayer: "X",
   activeBoard: null,
+  lastMove: null,
 });
 
 export const fullClocks = (limitSeconds: number): Clocks => ({
@@ -125,5 +130,12 @@ export const applyMove = (state: GameState, boardIdx: number, cellIdx: number): 
     winners,
     currentPlayer: otherSide(state.currentPlayer),
     activeBoard: nextBoardClosed ? null : nextBoard,
+    lastMove: { board: boardIdx, cell: cellIdx },
   };
+};
+
+/** A saved last move, if it is one */
+export const readMove = (value: unknown): Move | null => {
+  const move = value as Partial<Move> | null;
+  return move && isIndex(move.board) && isIndex(move.cell) ? { board: move.board, cell: move.cell } : null;
 };

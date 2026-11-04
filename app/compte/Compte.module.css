@@ -297,3 +297,24 @@ input.passwordInput {
   margin-right: 0.4rem;
   font-weight: 800;
 }
+
+/* Account header: who, and the profile and log out buttons */
+.headerCard {
+  padding: clamp(0.8rem, 2.4dvh, 1.25rem) 1.1rem;
+}
+.headerCard .identity {
+  flex: 1;
+}
+.headerActions {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+.headerCard .identity > * {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.headerCard .identity > span {
+  font-size: 0.85rem;
+}

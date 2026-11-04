@@ -1,37 +1,30 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import styles from "./Classe.module.css";
 import ui from "../../ui/common.module.css";
 import PageShell from "../../ui/PageShell";
 import Loader from "../../ui/Loader";
-import { Button, ButtonLink, IconLink } from "../../ui/Button";
-import { playFx } from "../../audio/engine";
-import Avatar from "../../account/Avatar";
+import Dialog from "../../ui/Dialog";
+import { Button, ButtonLink, IconButton, IconLink } from "../../ui/Button";
 import { refreshAccount, useAccount } from "../../account/client";
-import { ACCOUNT_ERROR_MESSAGES, type AccountView, type PublicProfile } from "../../account/protocol";
+import type { AccountView } from "../../account/protocol";
 import Crown from "../../ranked/Crown";
 import RankCard from "../../ranked/RankCard";
 import RankEmblem from "../../ranked/RankEmblem";
-import { POLL_MS, queue } from "../../ranked/client";
+import { gameHref, useRankedSearch } from "../../ranked/RankedSearch";
+import { formatWait } from "../../ranked/client";
 import { MATCHMAKING, PLACEMENT_GAMES, RATING } from "../../ranked/config";
-import type { QueueStatus, RankedRating } from "../../ranked/protocol";
+import type { RankedRating } from "../../ranked/protocol";
 import { rankOf } from "../../ranked/rating";
-
-// The opponent is shown this long before the game opens
-const VERSUS_MS = 2200;
-
-const formatWait = (ms: number) => {
-  const s = Math.floor(ms / 1000);
-  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
-};
 
 /** Ranked page: your rank, the search for an opponent, the rules */
 export default function Classe() {
   const account = useAccount();
+  const [rules, setRules] = useState(false);
   useEffect(() => {
     refreshAccount();
   }, []);
@@ -40,8 +33,14 @@ export default function Classe() {
     <PageShell
       title="Classé"
       backHref="/jouer"
-      actions={<IconLink href="/classement" icon="trophy" label="Top 50" />}
+      actions={
+        <>
+          <IconButton icon="help" label="Règles" onClick={() => setRules(true)} />
+          <IconLink href="/classement" icon="trophy" label="Top 50" />
+        </>
+      }
     >
+      <Rules open={rules} onClose={() => setRules(false)} />
       {account.status === "loading" && <Loader label="Chargement du compte…" />}
       {account.status === "error" && (
         <div className={ui.card}>
@@ -70,80 +69,26 @@ export default function Classe() {
 
 const Ranked = ({ account }: { account: AccountView }) => {
   const router = useRouter();
-  const params = useSearchParams();
-  const [autoStart] = useState(() => params.get("recherche") === "1");
-  const [status, setStatus] = useState<QueueStatus | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [startedAt, setStartedAt] = useState(0);
+  const { status, startedAt, error, start, cancel } = useRankedSearch();
   const [now, setNow] = useState(Date.now);
-  const searching = status?.status === "searching";
+  const [busy, setBusy] = useState(false);
+  const searching = status?.status === "searching" ? status : null;
   const matched = status?.status === "matched" ? status : null;
-  // Matched while on this page: the opponent is shown, then the game opens
-  const [versus, setVersus] = useState(false);
-  const searchingRef = useRef(false);
-  searchingRef.current = searching;
 
-  const ranked: RankedRating = account.ranked ?? { rating: RATING.start, games: 0 };
-
-  const apply = useCallback((res: Awaited<ReturnType<typeof queue>>, fromSearch: boolean) => {
-    if (!res.ok) {
-      setError(ACCOUNT_ERROR_MESSAGES[res.error]);
-      return;
-    }
-    setError(null);
-    setStatus(res.data);
-    // The wait shown counts from the first answer saying "searching" (a search already
-    // going on when the page opens included)
-    setStartedAt((t) => (res.data.status === "searching" ? t || Date.now() : 0));
-    if (res.data.status === "matched" && fromSearch) {
-      playFx("matchFound");
-      setVersus(true);
-    }
-  }, []);
-
-  // Where things stand when the page opens: a game on, a search going on, or nothing
-  useEffect(() => {
-    queue(autoStart ? "join" : "poll").then((res) => apply(res, autoStart));
-    // Asked once: a refresh or coming back here does not start another search
-    if (autoStart) router.replace("/jouer/classe");
-  }, [autoStart, apply, router]);
-
-  // While searching: the page says it is still there, and learns when a game is found
   useEffect(() => {
     if (!searching) return;
-    const poll = setInterval(() => queue("poll").then((res) => apply(res, true)), POLL_MS);
     const clock = setInterval(() => setNow(Date.now()), 500);
-    return () => {
-      clearInterval(poll);
-      clearInterval(clock);
-    };
-  }, [searching, apply]);
+    return () => clearInterval(clock);
+  }, [searching]);
 
-  // Leaving the page stops the search (a refresh too: the search would go on alone)
-  useEffect(() => {
-    const leave = () => {
-      if (searchingRef.current) void queue("leave");
-    };
-    window.addEventListener("pagehide", leave);
-    return () => {
-      window.removeEventListener("pagehide", leave);
-      leave();
-    };
-  }, []);
-
-  // The opponent shown, then the game
-  useEffect(() => {
-    if (!versus || !matched) return;
-    const timer = setTimeout(() => router.push(`/game?room=${matched.code}`), VERSUS_MS);
-    return () => clearTimeout(timer);
-  }, [versus, matched, router]);
-
-  const start = async () => {
+  const run = async (action: () => Promise<void>) => {
+    setBusy(true);
     setNow(Date.now());
-    apply(await queue("join"), true);
+    await action();
+    setBusy(false);
   };
-  const cancel = async () => apply(await queue("leave"), true);
 
+  const ranked: RankedRating = account.ranked ?? { rating: RATING.start, games: 0 };
   const rank = rankOf(ranked.rating, ranked.games);
   const record = account.ranked;
 
@@ -172,12 +117,10 @@ const Ranked = ({ account }: { account: AccountView }) => {
 
       <section className={`${ui.card} ${styles.search}`}>
         <AnimatePresence mode="wait">
-          {matched && versus ? (
-            <Versus key="versus" me={account} mine={ranked} status={matched} />
-          ) : matched ? (
+          {matched ? (
             <motion.div key="resume" className={styles.searchBody} initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
               <strong className={styles.lead}>Ta partie classée est en cours</strong>
-              <Button icon="play" fullWidth onClick={() => router.push(`/game?room=${matched.code}`)}>
+              <Button icon="play" fullWidth onClick={() => router.push(gameHref(matched.code))}>
                 Reprendre la partie
               </Button>
             </motion.div>
@@ -187,22 +130,23 @@ const Ranked = ({ account }: { account: AccountView }) => {
                 <span />
                 <span />
                 <span />
-                <RankEmblem rank={rank} size={56} />
+                <RankEmblem rank={rank} size={48} />
               </div>
               <strong className={styles.lead} role="status">
-                Recherche d&apos;un adversaire… {formatWait(Math.max(0, now - (startedAt || now)))}
+                Recherche d&apos;un adversaire… {formatWait(now - (startedAt || now))}
               </strong>
               <p className={ui.muted}>
-                Écart accepté : ±{status.range} points
-                {status.searching > 1 && ` · ${status.searching} joueurs en recherche`}
+                Écart accepté : ±{searching.range} points
+                {searching.searching > 1 && ` · ${searching.searching} joueurs en recherche`}
               </p>
-              <Button variant="secondary" fullWidth onClick={cancel}>
+              <p className={styles.hint}>Tu peux quitter cette page : la recherche continue.</p>
+              <Button variant="secondary" fullWidth onClick={() => run(cancel)} disabled={busy}>
                 Annuler
               </Button>
             </motion.div>
           ) : (
             <motion.div key="idle" className={styles.searchBody} initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              <Button icon="play" fullWidth onClick={start} disabled={!status}>
+              <Button icon="play" fullWidth onClick={() => run(start)} disabled={!status || busy}>
                 Rechercher une partie
               </Button>
               {status?.status === "idle" && status.searching > 0 && (
@@ -221,78 +165,28 @@ const Ranked = ({ account }: { account: AccountView }) => {
           </p>
         )}
       </section>
-
-      <section className={ui.section}>
-        <h2 className={ui.sectionTitle}>Règles</h2>
-        <ul className={`${ui.card} ${styles.rules}`}>
-          <li>
-            Adversaire de niveau proche, camp tiré au sort, chrono de {MATCHMAKING.clockSeconds / 60} minutes
-            par joueur qui démarre tout de suite.
-          </li>
-          <li>
-            Les {PLACEMENT_GAMES} premières parties placent ton rang&nbsp;: elles rapportent ou coûtent
-            beaucoup de points. Ensuite les écarts se resserrent.
-          </li>
-          <li>Abandonner ou quitter une partie compte comme une défaite.</li>
-          <li>
-            Un adversaire absent au début peut être laissé après {MATCHMAKING.noShowSeconds} secondes&nbsp;: la
-            partie est annulée, sans points perdus.
-          </li>
-          <li>Les 3 meilleurs joueurs du classement portent une couronne d&apos;or, d&apos;argent ou de bronze.</li>
-        </ul>
-      </section>
     </>
   );
 };
 
-type VersusProps = {
-  me: PublicProfile;
-  mine: RankedRating;
-  status: Extract<QueueStatus, { status: "matched" }>;
-};
-
-/** The two players face to face, just before the game */
-const Versus = ({ me, mine, status }: VersusProps) => {
-  const opponent = status.opponent;
-  const side = (profile: PublicProfile | null, rating: RankedRating | null, from: number) => {
-    const rank = rating && rankOf(rating.rating, rating.games);
-    return (
-      <motion.div
-        className={styles.versusPlayer}
-        initial={{ x: from, opacity: 0 }}
-        animate={{ x: 0, opacity: 1 }}
-        transition={{ type: "spring", stiffness: 220, damping: 18 }}
-      >
-        <span className={styles.versusAvatar}>
-          {profile?.crown && <Crown place={profile.crown} size={26} className={styles.versusCrown} />}
-          {profile ? <Avatar avatar={profile.avatar} color={profile.color} size={64} /> : null}
-        </span>
-        <strong>{profile?.pseudo ?? "Adversaire"}</strong>
-        {rank && (
-          <span className={styles.versusRank}>
-            <RankEmblem rank={rank} size={28} />
-            {rank.placed ? rank.label : "Placement"}
-          </span>
-        )}
-      </motion.div>
-    );
-  };
-  return (
-    <motion.div className={styles.versus} initial={{ opacity: 0 }} animate={{ opacity: 1 }} role="status">
-      <p className={styles.found}>Adversaire trouvé !</p>
-      <div className={styles.versusRow}>
-        {side(me, mine, -80)}
-        <motion.span
-          className={styles.versusVs}
-          initial={{ scale: 3, opacity: 0, rotate: -20 }}
-          animate={{ scale: 1, opacity: 1, rotate: 0 }}
-          transition={{ delay: 0.25, type: "spring", stiffness: 300, damping: 12 }}
-        >
-          VS
-        </motion.span>
-        {side(opponent, opponent, 80)}
-      </div>
-      <p className={styles.versusNote}>Tu joues {status.you === "X" ? "X et tu commences" : "O, ton adversaire commence"}.</p>
-    </motion.div>
-  );
-};
+/** The rules of ranked play, in a window opened from the top bar */
+const Rules = ({ open, onClose }: { open: boolean; onClose: () => void }) => (
+  <Dialog open={open} title="Règles du classé" onClose={onClose}>
+    <ul className={styles.rules}>
+      <li>
+        Adversaire de niveau proche, camp tiré au sort, chrono de {MATCHMAKING.clockSeconds / 60} minutes
+        par joueur qui démarre tout de suite.
+      </li>
+      <li>
+        Les {PLACEMENT_GAMES} premières parties placent ton rang&nbsp;: elles rapportent ou coûtent
+        beaucoup de points. Ensuite les écarts se resserrent.
+      </li>
+      <li>Abandonner ou quitter une partie compte comme une défaite.</li>
+      <li>
+        Un adversaire absent au début peut être laissé après {MATCHMAKING.noShowSeconds} secondes&nbsp;: la
+        partie est annulée, sans points perdus.
+      </li>
+      <li>Les 3 meilleurs joueurs du classement portent une couronne d&apos;or, d&apos;argent ou de bronze.</li>
+    </ul>
+  </Dialog>
+);

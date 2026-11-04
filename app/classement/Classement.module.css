@@ -3,6 +3,26 @@
   text-align: center;
 }
 
+/* Podium, then the list page by page; side by side on landscape screens */
+.layout {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(0.75rem, 2.6dvh, 1.5rem);
+}
+.listBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+@media (orientation: landscape) and (min-width: 700px) {
+  .layout {
+    display: grid;
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+    align-items: start;
+    gap: 1.5rem;
+  }
+}
+
 /* --- Podium --- */
 .podium {
   display: grid;
@@ -140,8 +160,6 @@
 
 /* Your place, when beyond the list */
 .you {
-  position: sticky;
-  bottom: 0.75rem;
   border-radius: 16px;
   background: var(--surface);
   box-shadow: 0 4px 16px var(--shadow);

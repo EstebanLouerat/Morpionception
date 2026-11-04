@@ -10,7 +10,8 @@ import { ButtonLink } from "../ui/Button";
 // Placeholder page: friends (on top of the accounts) are not built yet
 export default function Amis() {
   return (
-    <PageShell title="Amis">
+    <PageShell title="Amis" wide>
+      <div className={ui.columns}>
       <section className={ui.section}>
         <h2 className={ui.sectionTitle}>
           Ajouter un ami <Badge />
@@ -42,6 +43,7 @@ export default function Amis() {
           </ButtonLink>
         </div>
       </section>
+      </div>
     </PageShell>
   );
 }

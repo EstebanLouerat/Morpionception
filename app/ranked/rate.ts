@@ -34,6 +34,15 @@ export const pairKey = (a: string, b: string) => [a, b].sort().join("|");
 export const rankedGamesCollection = async () =>
   (await database()).collection<RankedGameLog>("rankedGames");
 
+const roomsCollection = async () =>
+  (await database()).collection<{ _id: string; round: number }>("rooms");
+
+/** A ranked game that could not be rated (a deleted account, an error): its pages show
+ * it instead of waiting for the points */
+export const markUnrated = async (code: string, round: number) => {
+  await (await roomsCollection()).updateOne({ _id: code, round }, { $set: { unrated: true }, $inc: { v: 1 } });
+};
+
 const ratingOf = (user: StoredUser): Rating => user.ranked ?? newRating();
 
 /** Saves the new rating of a player, only if their rating is still the one read */
@@ -83,8 +92,13 @@ export const rateRankedGame = async (
 
   const users = await usersCollection();
   const read = async (id: string) => users.findOne({ id }, NO_ID);
-  const players = { X: await read(X), O: await read(O) };
-  if (!players.X || !players.O) return null;
+  const [readX, readO] = await Promise.all([read(X), read(O)]);
+  const players = { X: readX, O: readO };
+  if (!players.X || !players.O) {
+    // A player deleted their account: nobody is rated, the pages stop waiting
+    await markUnrated(code, round);
+    return null;
+  }
   // Both new ratings come from the ratings before the game
   const before = { X: ratingOf(players.X), O: ratingOf(players.O) };
   const scoreX = game.winner === "X" ? 1 : game.winner === "O" ? 0 : 0.5;
@@ -115,9 +129,7 @@ export const rateRankedGame = async (
     O: { before: before.O.rating, after: after.O.rating, gamesBefore: before.O.games, gamesAfter: after.O.games },
   };
   // Shown in the room: its version changes, so the pages get it at once
-  await (await database())
-    .collection<{ _id: string; round: number }>("rooms")
-    .updateOne({ _id: code, round }, { $set: { ratings }, $inc: { v: 1 } });
+  await (await roomsCollection()).updateOne({ _id: code, round }, { $set: { ratings }, $inc: { v: 1 } });
   forgetLeaderboard();
   return ratings;
 };

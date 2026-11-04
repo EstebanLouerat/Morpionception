@@ -13,7 +13,7 @@ import { ApiFailure } from "../lib/api";
 import { database, isDuplicateKey } from "../lib/mongo";
 import { MATCHMAKING } from "../ranked/config";
 import type { RankedRating, RatingChange } from "../ranked/protocol";
-import { rateRankedGame } from "../ranked/rate";
+import { markUnrated, rateRankedGame } from "../ranked/rate";
 import {
   applyMove,
   fullClocks,
@@ -97,6 +97,8 @@ type Room = {
   ranked?: Record<Side, RankedRating> | null;
   /** Ranked game rated: the ratings before and after */
   ratings?: Record<Side, RatingChange> | null;
+  /** Ranked game that could not be rated */
+  unrated?: boolean;
 };
 
 /** Saved by every change (presence and lastSeen are saved by the pages) */
@@ -182,6 +184,7 @@ const viewFor = (room: Room, you: Side, profiles: Map<string, PublicProfile>): R
     recorded: room.recorded,
     ranked: room.ranked ?? null,
     ratings: room.ratings ?? null,
+    unrated: !!room.unrated,
     claimAfter: claimAfter(room),
   };
 };
@@ -266,9 +269,18 @@ const changeRoom = async <T>(
     }
     wakeUp(code);
     if (effects.finished) {
+      // A ranked game is rated first, so its history entry has the points won or lost
+      let ratings: Record<Side, RatingChange> | null = null;
+      if (effects.rate) {
+        try {
+          ratings = await rateRankedGame(code, effects.rate.round, effects.finished);
+        } catch (e) {
+          // Counted in the stats all the same; the pages stop waiting for points
+          console.error("Partie classée non notée", e);
+          await markUnrated(code, effects.rate.round).catch(() => {});
+        }
+      }
       try {
-        // A ranked game is rated first, so its history entry has the points won or lost
-        const ratings = effects.rate ? await rateRankedGame(code, effects.rate.round, effects.finished) : null;
         await recordGame(effects.finished, ratings);
       } catch (e) {
         // The game goes on without stats rather than failing on an account error

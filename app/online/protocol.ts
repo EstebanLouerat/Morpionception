@@ -106,6 +106,8 @@ export type RoomView = {
   ranked: Record<Side, RankedRating> | null;
   /** The ranked game is rated: ratings before and after (arrives just after the result) */
   ratings: Record<Side, RatingChange> | null;
+  /** The ranked game could not be rated (an account was deleted): no points */
+  unrated: boolean;
   /** How long the other player must have been away before the win can be claimed */
   claimAfter: number;
 };

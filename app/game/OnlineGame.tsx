@@ -294,10 +294,12 @@ const OnlineBoard = ({ code, view, receivedAt, connected }: OnlineBoardProps) =>
           {ranked ? (
             view.ratings?.[you] ? (
               <RankChange change={view.ratings[you]} />
-            ) : cancelled || (outcome && !view.recorded) ? (
+            ) : cancelled || (outcome && !view.recorded) || view.unrated ? (
               <p className={styles.modalNote}>
                 {cancelled
                   ? "Moins de 2 coups joués : pas de points gagnés ni perdus."
+                  : view.unrated
+                  ? "Partie non classée : pas de points gagnés ni perdus."
                   : "Partie non comptée : pas de points gagnés ni perdus."}
               </p>
             ) : (

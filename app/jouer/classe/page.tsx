@@ -104,7 +104,9 @@ const Ranked = ({ account }: { account: AccountView }) => {
   // Where things stand when the page opens: a game on, a search going on, or nothing
   useEffect(() => {
     queue(autoStart ? "join" : "poll").then((res) => apply(res, autoStart));
-  }, [autoStart, apply]);
+    // Asked once: a refresh or coming back here does not start another search
+    if (autoStart) router.replace("/jouer/classe");
+  }, [autoStart, apply, router]);
 
   // While searching: the page says it is still there, and learns when a game is found
   useEffect(() => {

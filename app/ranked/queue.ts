@@ -58,14 +58,20 @@ const rangeOf = (since: number, now: number) =>
 const searchingCount = async (now: number) =>
   (await queueCollection()).countDocuments({ match: null, seenAt: { $gt: now - STALE_MS } });
 
-/** These two played too many ranked games together lately */
-const playedTooOften = async (a: string, b: string, now: number) => {
-  const limit = MATCHMAKING.sameOpponentPerDay;
-  const count = await (await rankedGamesCollection()).countDocuments(
-    { pair: pairKey(a, b), at: { $gt: new Date(now - DAY_MS) } },
-    { limit }
-  );
-  return count >= limit;
+/** Pairs of these players who played too many ranked games together lately (one query
+ * for the whole pairing pass) */
+const tooOftenPairs = async (ids: string[], now: number) => {
+  const pairs: string[] = [];
+  for (let i = 0; i < ids.length; i++)
+    for (let j = i + 1; j < ids.length; j++) pairs.push(pairKey(ids[i], ids[j]));
+  const counts = new Map<string, number>();
+  if (pairs.length) {
+    const logs = await (await rankedGamesCollection())
+      .find({ pair: { $in: pairs }, at: { $gt: new Date(now - DAY_MS) } }, { projection: { _id: 0, pair: 1 } })
+      .toArray();
+    for (const { pair } of logs) counts.set(pair, (counts.get(pair) ?? 0) + 1);
+  }
+  return new Set([...counts].filter(([, n]) => n >= MATCHMAKING.sameOpponentPerDay).map(([pair]) => pair));
 };
 
 /** Makes the game of two waiting players; false if one of them stopped searching */
@@ -130,6 +136,7 @@ const pairPlayers = async (now: number) => {
       .find({ match: null, seenAt: { $gt: now - STALE_MS } })
       .sort({ since: 1 })
       .toArray();
+    const blocked = await tooOftenPairs(waiting.map((e) => e._id), now);
     const paired = new Set<string>();
     for (const a of waiting) {
       if (paired.has(a._id)) continue;
@@ -140,7 +147,7 @@ const pairPlayers = async (now: number) => {
         // The one who waited longer widens the search for both
         if (gap > Math.max(rangeOf(a.since, now), rangeOf(b.since, now))) continue;
         if (best && gap >= Math.abs(a.rating - best.rating)) continue;
-        if (await playedTooOften(a._id, b._id, now)) continue;
+        if (blocked.has(pairKey(a._id, b._id))) continue;
         best = b;
       }
       if (best && (await startGame(a, best))) {

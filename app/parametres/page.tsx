@@ -5,10 +5,50 @@ import { useSearchParams } from "next/navigation";
 import styles from "./Settings.module.css";
 import ui from "../ui/common.module.css";
 import PageShell from "../ui/PageShell";
+import Tabs from "../ui/Tabs";
 import Badge from "../ui/Badge";
 import { playFx } from "../audio/engine";
 import { AudioSettings, setAudioSettings, useAudioSettings } from "../audio/settings";
-import { PALETTES, THEMES, setAppearance, useAppearance } from "../theme/appearance";
+import {
+  BOARD_SIZE_CHOICES,
+  PALETTES,
+  THEMES,
+  setAppearance,
+  useAppearance,
+} from "../theme/appearance";
+import type { Appearance } from "../theme/constants";
+
+/** The on/off accessibility settings */
+const SWITCHES: { key: "bigSymbols" | "highContrast" | "reduceMotion"; label: string; hint: string }[] = [
+  { key: "bigSymbols", label: "Grands symboles", hint: "X et O plus grands et plus épais" },
+  { key: "highContrast", label: "Contraste élevé", hint: "Bords visibles, grille imposée bien marquée" },
+  { key: "reduceMotion", label: "Réduire les animations", hint: "Moins de mouvements et pas de confettis" },
+];
+
+/** One small grid with the settings applied (the same attributes as the game) */
+const Preview = ({ appearance }: { appearance: Appearance }) => {
+  const cells = ["X", "", "O", "", "X", "", "O", "", ""];
+  return (
+    <div className={styles.preview} aria-hidden="true">
+      <div className={styles.previewBoard}>
+        {cells.map((c, i) => (
+          <span
+            key={i}
+            className={`${styles.previewCell} ${c === "X" ? styles.x : c === "O" ? styles.o : ""} ${
+              i === 4 ? styles.previewLast : ""
+            }`}
+          >
+            {c}
+          </span>
+        ))}
+      </div>
+      <span className={styles.previewLabel}>
+        Aperçu · cases{" "}
+        {BOARD_SIZE_CHOICES.find((b) => b.id === appearance.boardSize)?.label.toLowerCase()}
+      </span>
+    </div>
+  );
+};
 
 const SLIDERS: { key: keyof AudioSettings; label: string }[] = [
   { key: "fx", label: "Effets sonores" },
@@ -31,7 +71,15 @@ export default function Settings() {
 
   return (
     <PageShell title="Paramètres" backHref={getBackHref(params)} wide>
-      <div className={ui.columns}>
+      <Tabs
+        label="Paramètres"
+        allOnWide
+        initial={params.get("onglet") ?? undefined}
+        tabs={[
+          {
+            id: "audio",
+            label: "Audio",
+            content: (
       <section className={ui.section}>
         <h2 className={ui.sectionTitle}>Audio</h2>
         <div className={ui.card}>
@@ -67,6 +115,12 @@ export default function Settings() {
         </div>
       </section>
 
+            ),
+          },
+          {
+            id: "apparence",
+            label: "Apparence",
+            content: (
       <section className={ui.section}>
         <h2 className={ui.sectionTitle}>Apparence</h2>
         <div className={ui.card}>
@@ -124,7 +178,62 @@ export default function Settings() {
           </div>
         </div>
       </section>
-      </div>
+            ),
+          },
+          {
+            id: "accessibilite",
+            label: "Accessibilité",
+            content: (
+      <section className={ui.section}>
+        <h2 className={ui.sectionTitle}>Accessibilité</h2>
+        <div className={ui.card}>
+          <div className={styles.accessTop}>
+            <fieldset className={styles.fieldset}>
+              <legend className={styles.rowHeader}>Taille des cases en jeu</legend>
+              <div className={styles.segmented}>
+                {BOARD_SIZE_CHOICES.map((b) => (
+                  <label key={b.id} className={styles.segment}>
+                    <input
+                      type="radio"
+                      name="board-size"
+                      value={b.id}
+                      checked={appearance.boardSize === b.id}
+                      onChange={() => {
+                        playFx("select");
+                        setAppearance({ boardSize: b.id });
+                      }}
+                    />
+                    <span>{b.label}</span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+            <Preview appearance={appearance} />
+          </div>
+          {SWITCHES.map((s) => (
+            <label key={s.key} className={styles.switchRow}>
+              <span className={styles.switchText}>
+                <strong>{s.label}</strong>
+                <small>{s.hint}</small>
+              </span>
+              <input
+                type="checkbox"
+                role="switch"
+                className={styles.switch}
+                checked={appearance[s.key]}
+                onChange={(e) => {
+                  playFx("select");
+                  setAppearance({ [s.key]: e.target.checked });
+                }}
+              />
+            </label>
+          ))}
+        </div>
+      </section>
+            ),
+          },
+        ]}
+      />
     </PageShell>
   );
 }

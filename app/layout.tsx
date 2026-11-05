@@ -6,6 +6,7 @@ import AudioManager from "./audio/AudioManager";
 import ThemeManager from "./theme/ThemeManager";
 import { themeScript } from "./theme/themeScript";
 import RankedSearchProvider from "./ranked/RankedSearch";
+import MotionPreference from "./theme/MotionPreference";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -38,7 +39,9 @@ export default function RootLayout({
         <RouterMounting>
           <ThemeManager />
           <AudioManager />
-          <RankedSearchProvider>{children}</RankedSearchProvider>
+          <MotionPreference>
+            <RankedSearchProvider>{children}</RankedSearchProvider>
+          </MotionPreference>
         </RouterMounting>
       </body>
     </html>

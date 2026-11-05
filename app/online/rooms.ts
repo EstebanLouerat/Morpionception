@@ -24,6 +24,7 @@ import {
   type Cell,
   type Clocks,
   type GameState,
+  type Move,
   type Outcome,
   type Side,
 } from "../game/rules";
@@ -36,6 +37,7 @@ import {
   type PlayerInfo,
   type RoomError,
   type RoomView,
+  type TakebackRequest,
 } from "./protocol";
 
 const MAX_ROOMS = 1000;
@@ -99,6 +101,12 @@ type Room = {
   ratings?: Record<Side, RatingChange> | null;
   /** Ranked game that could not be rated */
   unrated?: boolean;
+  /** Moves of the round, in order (missing in rooms made before take-backs) */
+  history?: Move[];
+  /** A request to take back moves, waiting for an answer */
+  takeback?: TakebackRequest | null;
+  /** A request refused: not asked again until the position changes (moves) */
+  takebackRefused?: { by: Side; moves: number } | null;
 };
 
 /** Saved by every change (presence and lastSeen are saved by the pages) */
@@ -111,6 +119,9 @@ const CHANGED_FIELDS = [
   "outcome",
   "moves",
   "recorded",
+  "history",
+  "takeback",
+  "takebackRefused",
   "lastActivity",
   "expireAt",
 ] as const;
@@ -186,7 +197,39 @@ const viewFor = (room: Room, you: Side, profiles: Map<string, PublicProfile>): R
     ratings: room.ratings ?? null,
     unrated: !!room.unrated,
     claimAfter: claimAfter(room),
+    takeback: room.takeback ?? null,
+    canTakeback: takebackMoves(room, you) > 0,
+    takebackRefused: room.takebackRefused?.by === you && room.takebackRefused.moves === room.moves,
   };
+};
+
+// --- Take-backs ---
+
+/** How many moves `side` would take back now: their last move, and the reply played
+ * since if any (0 when they cannot ask: nothing to take back, game over, a request
+ * already waiting, or refused for this very position) */
+const takebackMoves = (room: Room, side: Side) => {
+  const history = room.history ?? [];
+  if (room.outcome || room.takeback || !room.seats.X || !room.seats.O) return 0;
+  if (room.seats.X.left || room.seats.O.left) return 0;
+  if (room.takebackRefused?.by === side && room.takebackRefused.moves === room.moves) return 0;
+  // X plays the moves 0, 2, 4…, O the moves 1, 3, 5…
+  const parity = side === "X" ? 0 : 1;
+  let last = history.length - 1;
+  if (last >= 0 && last % 2 !== parity) last--;
+  return last >= 0 ? history.length - last : 0;
+};
+
+/** The round as it was `count` moves ago */
+const takeBack = (room: Room, count: number, now: number) => {
+  const history = (room.history ?? []).slice(0, -count);
+  room.game = history.reduce((game, move) => applyMove(game, move.board, move.cell), newGameState());
+  room.history = history;
+  room.moves = history.length;
+  // The time spent is not given back; the clock goes on for the player to move (a
+  // friend's chrono starts again with the first move, a ranked one never stops)
+  room.turnStartedAt =
+    room.clockLimit > 0 && (room.moves > 0 || room.ranked) ? now : null;
 };
 
 // --- Pages of this server instance waiting for a room to change ---
@@ -321,6 +364,7 @@ const countBoards = (winners: Cell[], side: Side) => winners.filter((w) => w ===
 const endGame = (room: Room, effects: Effects, outcome: NonNullable<Outcome>, record = true) => {
   if (room.outcome) return;
   room.outcome = outcome;
+  room.takeback = null;
   stopClock(room);
   // A game left before each player has moved does not count either
   if (!record || room.moves < 2) return;
@@ -378,6 +422,7 @@ export const createRoom = async (body: unknown, userId: string | null): Promise<
       seats: { X: null, O: null },
       round: 1,
       game: newGameState(),
+      history: [],
       clocks: fullClocks(clock as number),
       turnStartedAt: null,
       outcome: null,
@@ -419,6 +464,7 @@ export const createRankedRoom = async (players: Record<Side, { id: string; ratin
       seats,
       round: 1,
       game: newGameState(),
+      history: [],
       clocks: fullClocks(clock),
       turnStartedAt: clock > 0 ? now : null,
       outcome: null,
@@ -455,7 +501,7 @@ const isIndex = (n: unknown) => typeof n === "number" && Number.isInteger(n) && 
 /** Join the room (or come back to it), play, ask for a rematch, resign or leave.
  * userId is the account of the player, if logged in, kept from their first join. */
 export const performAction = (code: string, body: unknown, userId: string | null) => {
-  const { type, token, board, cell, page, gone } = (body ?? {}) as Record<string, unknown>;
+  const { type, token, board, cell, page, gone, accept } = (body ?? {}) as Record<string, unknown>;
   if (type === "presence") return markPresence(code, token, page, gone === true);
 
   return changeRoom(code, (room, now, effects): JoinResponse | null => {
@@ -494,10 +540,43 @@ export const performAction = (code: string, body: unknown, userId: string | null
         if (room.game.currentPlayer !== side) fail("not-your-turn");
         if (!isValidMove(room.game, board as number, cell as number)) fail("invalid-move");
         room.game = applyMove(room.game, board as number, cell as number);
+        room.history = [...(room.history ?? []), { board: board as number, cell: cell as number }];
         room.moves++;
+        // A move answers a waiting request (it no longer takes back the same moves)
+        room.takeback = null;
         const outcome = getBoardOutcome(room.game);
         if (outcome) endGame(room, effects, outcome);
         else if (room.clockLimit > 0) room.turnStartedAt = now;
+        break;
+      }
+      case "takeback": {
+        if (!opponent) fail("waiting");
+        if (room.outcome) fail("game-over");
+        const count = takebackMoves(room, side);
+        if (!count) fail("no-takeback");
+        room.takeback = { by: side, moves: count };
+        break;
+      }
+      case "takeback-cancel": {
+        if (room.takeback?.by !== side) fail("no-takeback");
+        room.takeback = null;
+        break;
+      }
+      case "takeback-answer": {
+        const asked = room.takeback;
+        if (!asked || asked.by === side) fail("no-takeback");
+        room.takeback = null;
+        if (accept !== true) {
+          room.takebackRefused = { by: asked!.by, moves: room.moves };
+          break;
+        }
+        // The clock of the player to move counts until now (and may have run out)
+        settleClock(room, now, effects);
+        if (room.outcome) {
+          effects.error = "game-over";
+          break;
+        }
+        takeBack(room, asked!.moves, now);
         break;
       }
       case "resign": {
@@ -532,6 +611,9 @@ export const performAction = (code: string, body: unknown, userId: string | null
           room.clocks = fullClocks(room.clockLimit);
           room.outcome = null;
           room.moves = 0;
+          room.history = [];
+          room.takeback = null;
+          room.takebackRefused = null;
           room.recorded = false;
           stopClock(room);
         }

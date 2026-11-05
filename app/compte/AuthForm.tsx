@@ -4,7 +4,8 @@ import ui from "../ui/common.module.css";
 import { Button } from "../ui/Button";
 import { playFx } from "../audio/engine";
 import PasswordField from "./PasswordField";
-import { login, signup } from "../account/client";
+import { googleHref, login, signup, useProviders } from "../account/client";
+import GoogleButton from "./GoogleButton";
 import { PSEUDO_MAX, checkPassword, checkPseudo } from "../account/profile";
 import { ACCOUNT_ERROR_MESSAGES } from "../account/protocol";
 
@@ -15,8 +16,9 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "signup", label: "Créer un compte" },
 ];
 
-/** Log-in and sign-up, one tab each */
-const AuthForm = ({ onDone }: { onDone: () => void }) => {
+/** Log-in and sign-up, one tab each, and Google when the server offers it */
+const AuthForm = ({ onDone, back }: { onDone: () => void; back: string | null }) => {
+  const providers = useProviders();
   const [tab, setTab] = useState<Tab>("login");
   const [pseudo, setPseudo] = useState("");
   const [password, setPassword] = useState("");
@@ -80,6 +82,13 @@ const AuthForm = ({ onDone }: { onDone: () => void }) => {
           </button>
         ))}
       </div>
+
+      {providers?.google && (
+        <>
+          <GoogleButton href={googleHref({ back })} label="Continuer avec Google" />
+          <span className={styles.orLine}>ou avec un pseudo</span>
+        </>
+      )}
 
       <div className={styles.field}>
         <label className={styles.fieldLabel} htmlFor="auth-pseudo">

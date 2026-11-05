@@ -2,7 +2,7 @@
 
 import styles from "./Game.module.css";
 import ui from "../ui/common.module.css";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { playFx } from "../audio/engine";
 import { Button, ButtonLink } from "../ui/Button";
@@ -105,6 +105,11 @@ const OnlineBoard = ({ code, view, receivedAt, connected }: OnlineBoardProps) =>
       ? pending.state
       : view.game;
   const canPlay = !outcome && connected && game.currentPlayer === you;
+  // Once the server has moved on, the move shown in advance is done with (a take-back
+  // could bring the same move count back with another position)
+  useEffect(() => {
+    setPending((p) => (p && (p.round !== view.round || p.moves !== view.moves) ? null : p));
+  }, [view.round, view.moves]);
 
   const play = (board: number, cell: number) => {
     setPending({ round: view.round, moves: view.moves, state: applyMove(view.game, board, cell) });
@@ -167,6 +172,35 @@ const OnlineBoard = ({ code, view, receivedAt, connected }: OnlineBoardProps) =>
   };
   const rematch = () => sendAction(code, { type: "rematch" });
 
+  // Take-backs: ask the opponent to take back your last move (a misclick), or answer
+  const takeback = outcome ? null : view.takeback;
+  const theyAsk = takeback && takeback.by === friend ? takeback : null;
+  const iAsk = takeback?.by === you;
+  const [answering, setAnswering] = useState(false);
+  const askTakeback = () => sendAction(code, { type: "takeback" });
+  const cancelTakeback = () => sendAction(code, { type: "takeback-cancel" });
+  const answerTakeback = async (accept: boolean) => {
+    setAnswering(true);
+    await sendAction(code, { type: "takeback-answer", accept });
+    setAnswering(false);
+  };
+  // A new request (once per position) rings
+  const askedAt = theyAsk ? `${view.round}:${view.moves}` : null;
+  useEffect(() => {
+    if (askedAt) playFx("request");
+  }, [askedAt]);
+  // Moves taken back: said for a moment
+  const [takenBack, setTakenBack] = useState(false);
+  const lastMoves = useRef({ round: view.round, moves: view.moves });
+  useEffect(() => {
+    const before = lastMoves.current;
+    lastMoves.current = { round: view.round, moves: view.moves };
+    if (before.round !== view.round || view.moves >= before.moves) return;
+    setTakenBack(true);
+    const timer = setTimeout(() => setTakenBack(false), 3000);
+    return () => clearTimeout(timer);
+  }, [view.round, view.moves]);
+
   const mode = {
     ...ONLINE_MODE,
     name: ranked ? "Classé" : ONLINE_MODE.name,
@@ -202,6 +236,9 @@ const OnlineBoard = ({ code, view, receivedAt, connected }: OnlineBoardProps) =>
   else if (noShow && friendAway) notice = `En attente de ${friendInSentence}…`;
   else if (canClaim) notice = `${friendName} est hors ligne depuis plus de 2 minutes.`;
   else if (friendAway) notice = `${friendName} est hors ligne, attends son retour…`;
+  else if (iAsk) notice = `Demande envoyée : ${friendInSentence} peut accepter de reprendre ton coup.`;
+  else if (view.takebackRefused && !outcome) notice = `${friendName} a refusé de reprendre le coup.`;
+  else if (takenBack) notice = "Coup repris.";
 
   // Whether this game went into the stats, said once it is over
   const statsNote = loggedInAsGuest
@@ -247,6 +284,24 @@ const OnlineBoard = ({ code, view, receivedAt, connected }: OnlineBoardProps) =>
       profiles={{ X: players.X.profile, O: players.O.profile }}
       ranks={view.ranked}
       notice={notice}
+      prompt={
+        theyAsk && (
+          <>
+            <span>
+              {friendName} demande à reprendre{" "}
+              {theyAsk.moves === 1 ? "son dernier coup" : "son dernier coup et ta réponse"}.
+            </span>
+            <div>
+              <Button size="sm" onClick={() => answerTakeback(true)} disabled={answering}>
+                Accepter
+              </Button>
+              <Button size="sm" variant="secondary" onClick={() => answerTakeback(false)} disabled={answering}>
+                Refuser
+              </Button>
+            </div>
+          </>
+        )
+      }
       controls={
         gameOver ? (
           <>
@@ -263,6 +318,23 @@ const OnlineBoard = ({ code, view, receivedAt, connected }: OnlineBoardProps) =>
           </>
         ) : (
           <>
+            {iAsk ? (
+              <Button className={styles.ctrlBtn} variant="secondary" onClick={cancelTakeback}>
+                Annuler la demande
+              </Button>
+            ) : (
+              view.canTakeback && (
+                <Button
+                  className={styles.ctrlBtn}
+                  variant="secondary"
+                  onClick={askTakeback}
+                  title="Demander à reprendre ton dernier coup"
+                  aria-label="Demander à reprendre mon dernier coup"
+                >
+                  Reprendre
+                </Button>
+              )
+            )}
             {canClaim && (
               <Button className={styles.ctrlBtn} onClick={claim}>
                 {noShow ? "Annuler la partie" : "Réclamer la victoire"}

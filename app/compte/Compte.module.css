@@ -318,3 +318,71 @@ input.passwordInput {
 .headerCard .identity > span {
   font-size: 0.85rem;
 }
+
+/* Log-in with Google */
+.googleBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 2px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 700;
+  text-decoration: none;
+  transition: border-color 0.2s;
+}
+@media (hover: hover) {
+  .googleBtn:hover {
+    border-color: var(--primary-x);
+  }
+}
+.googleBtn:focus-visible {
+  outline: 3px solid var(--primary-x);
+  outline-offset: 2px;
+}
+.orLine {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+.orLine::before,
+.orLine::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+.note {
+  padding: 0.7rem 0.9rem;
+  border-radius: 12px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+.noteSuccess {
+  background: color-mix(in srgb, #16a085 14%, transparent);
+  color: #0e7a63;
+}
+.noteError {
+  background: color-mix(in srgb, #e5484d 12%, transparent);
+  color: #c4282e;
+}
+:global(:root[data-theme="dark"]) .noteSuccess {
+  color: #4fd6b4;
+}
+:global(:root[data-theme="dark"]) .noteError {
+  color: #ff7b7f;
+}
+
+/* Short screens: the log-in form matters more than the guest explanation */
+@media (max-height: 700px) {
+  .guestIntro {
+    display: none;
+  }
+}

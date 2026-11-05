@@ -10,7 +10,7 @@ import Loader from "../ui/Loader";
 import { Button, IconButton, IconLink } from "../ui/Button";
 import Tabs from "../ui/Tabs";
 import Avatar from "../account/Avatar";
-import { logout, refreshAccount, safeReturnPath, useAccount } from "../account/client";
+import { GOOGLE_NOTES, logout, refreshAccount, safeReturnPath, useAccount } from "../account/client";
 import { ACCOUNT_ERROR_MESSAGES, type AccountView } from "../account/protocol";
 import AuthForm from "./AuthForm";
 import StatsPanel from "./StatsPanel";
@@ -25,6 +25,19 @@ export default function Compte() {
   const account = useAccount();
   const params = useSearchParams();
   const [returnTo] = useState(() => safeReturnPath(params.get("retour")));
+  // Back from Google (?google=…): what happened, said once
+  const [googleNote] = useState(() => GOOGLE_NOTES[params.get("google") ?? ""] ?? null);
+  useEffect(() => {
+    if (params.get("google")) router.replace(returnTo ? `/compte?retour=${encodeURIComponent(returnTo)}` : "/compte");
+  }, [params, returnTo, router]);
+  const note = googleNote && (
+    <p
+      className={`${styles.note} ${googleNote.kind === "error" ? styles.noteError : styles.noteSuccess}`}
+      role={googleNote.kind === "error" ? "alert" : "status"}
+    >
+      {googleNote.text}
+    </p>
+  );
   // Fresh stats when coming back from a game
   useEffect(() => {
     refreshAccount();
@@ -41,6 +54,7 @@ export default function Compte() {
           </Button>
         </div>
       )}
+      {account.status === "guest" && note}
       {account.status === "guest" && (
         <div className={ui.columns}>
           <section className={ui.card}>
@@ -50,7 +64,7 @@ export default function Compte() {
               </span>
               <div>
                 <strong className={styles.name}>Invité</strong>
-                <p className={ui.muted}>
+                <p className={`${ui.muted} ${styles.guestIntro}`}>
                   Crée un compte pour garder tes statistiques en ligne, jouer en classé et
                   choisir ton pseudo et ton avatar. Les amis arrivent bientôt.
                 </p>
@@ -62,10 +76,15 @@ export default function Compte() {
               {ACCOUNT_ERROR_MESSAGES.unauthorized}
             </p>
           )}
-          <AuthForm onDone={() => returnTo && router.replace(returnTo)} />
+          <AuthForm onDone={() => returnTo && router.replace(returnTo)} back={returnTo} />
         </div>
       )}
-      {account.status === "user" && <UserAccount account={account.account} />}
+      {account.status === "user" && (
+        <>
+          {note}
+          <UserAccount account={account.account} />
+        </>
+      )}
     </PageShell>
   );
 }

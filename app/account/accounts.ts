@@ -1,6 +1,6 @@
 // Account operations behind the account API, and game results for the stats. Server side only.
 import "server-only";
-import { randomUUID } from "node:crypto";
+import { randomInt, randomUUID } from "node:crypto";
 import type { NextRequest } from "next/server";
 import type { OutcomeReason, Side } from "../game/rules";
 import { ApiFailure } from "../lib/api";
@@ -24,6 +24,8 @@ import {
   isAvatarId,
   isColorId,
   isPlausiblePseudo,
+  PSEUDO_MAX,
+  pseudoFromName,
   pseudoKey,
 } from "./profile";
 import {
@@ -37,6 +39,7 @@ import {
 import {
   NO_ID,
   findUser,
+  findUserByGoogle,
   findUserByKey,
   normalizeUser,
   sessionsCollection,
@@ -63,6 +66,8 @@ const STATUS: Record<AccountError, number> = {
   "accounts-full": 503,
   "storage-unavailable": 503,
   "forbidden-origin": 403,
+  "google-taken": 409,
+  "needs-password": 409,
   network: 503,
 };
 
@@ -128,17 +133,23 @@ export const accountView = async (user: StoredUser): Promise<AccountView> => {
     stats: user.stats,
     recent: user.recent.map(({ opponentId, ...game }) => ({ ...game, opponent: opponentOf(opponentId) })),
     ranked,
+    hasPassword: !!user.password,
+    google: !!user.googleSub,
   };
 };
 
-/** Same password hash (compared by value: the account may have been read again) */
-const samePassword = (a: StoredPassword, b: StoredPassword) => a.hash === b.hash && a.salt === b.salt;
+/** Same password hash (compared by value: the account may have been read again); two
+ * accounts without password match too */
+const samePassword = (a: StoredPassword | null, b: StoredPassword | null) =>
+  a === null || b === null ? a === b : a.hash === b.hash && a.salt === b.salt;
 
-/** Replaces the password, only if it is still the one checked (not changed meanwhile);
- * returns whether it was */
-const replacePassword = async (id: string, checked: StoredPassword, next: StoredPassword) => {
+/** Replaces the password, only if it is still the one checked (not changed meanwhile,
+ * or still none); returns whether it was */
+const replacePassword = async (id: string, checked: StoredPassword | null, next: StoredPassword) => {
   const res = await (await usersCollection()).updateOne(
-    { id, "password.hash": checked.hash, "password.salt": checked.salt },
+    checked
+      ? { id, "password.hash": checked.hash, "password.salt": checked.salt }
+      : { id, password: null },
     { $set: { password: next } }
   );
   return res.matchedCount === 1;
@@ -156,6 +167,71 @@ const pseudoTakenBy = async (pseudo: string, except?: string) => {
   return !!user && user.id !== except;
 };
 
+// --- Google ---
+
+/** The account of this Google account, made on the first log-in (with a pseudo from
+ * the Google name, changed later in the profile). created: it is new. */
+export const googleSignIn = async (sub: string, name: string) => {
+  const known = await findUserByGoogle(sub);
+  if (known) return { user: known, created: false };
+  const users = await usersCollection();
+  if ((await users.estimatedDocumentCount()) >= maxAccounts()) fail("accounts-full");
+  const base = pseudoFromName(name, PSEUDO_MAX - 4) ?? "Joueur";
+  for (let attempt = 0; attempt < 12; attempt++) {
+    // The name itself first, then with a number
+    const pseudo = attempt === 0 ? base : `${base}${randomInt(10, attempt < 6 ? 100 : 10000)}`;
+    if (!checkPseudo(pseudo).ok || (await pseudoTakenBy(pseudo))) continue;
+    const user: StoredUser = {
+      ...newUserFields(pseudo),
+      password: null,
+      googleSub: sub,
+    };
+    try {
+      await users.insertOne({ ...user });
+      return { user, created: true };
+    } catch (e) {
+      if (!isDuplicateKey(e)) throw e;
+      // The same Google account signed up meanwhile (two tabs): that account
+      const raced = await findUserByGoogle(sub);
+      if (raced) return { user: raced, created: false };
+    }
+  }
+  return fail("server-busy");
+};
+
+/** Links a Google account to a logged-in account */
+export const linkGoogle = async (user: StoredUser, sub: string) => {
+  const owner = await findUserByGoogle(sub);
+  if (owner && owner.id !== user.id) fail("google-taken");
+  try {
+    await (await usersCollection()).updateOne({ id: user.id }, { $set: { googleSub: sub } });
+  } catch (e) {
+    if (isDuplicateKey(e)) fail("google-taken");
+    throw e;
+  }
+};
+
+/** Unlinks Google; only with a password left to log in */
+export const unlinkGoogle = async (user: StoredUser) => {
+  const res = await (await usersCollection()).updateOne(
+    { id: user.id, password: { $ne: null } },
+    { $unset: { googleSub: "" } }
+  );
+  if (res.matchedCount === 0) fail("needs-password");
+};
+
+/** What every new account starts with */
+const newUserFields = (pseudo: string) => ({
+  id: randomUUID(),
+  pseudo,
+  pseudoKey: pseudoKey(pseudo),
+  avatar: pick(AVATARS).id,
+  color: pick(AVATAR_COLORS).id,
+  createdAt: Date.now(),
+  stats: emptyStats(),
+  recent: [],
+});
+
 export const signup = async (body: unknown) => {
   const { pseudo: rawPseudo, password } = (body ?? {}) as Record<string, unknown>;
   const pseudo = validPseudo(rawPseudo);
@@ -164,17 +240,7 @@ export const signup = async (body: unknown) => {
   if ((await users.estimatedDocumentCount()) >= maxAccounts()) fail("accounts-full");
   if (await pseudoTakenBy(pseudo)) fail("pseudo-taken");
   const hashed = await hashPassword(password as string);
-  const user: StoredUser = {
-    id: randomUUID(),
-    pseudo,
-    pseudoKey: pseudoKey(pseudo),
-    password: hashed,
-    avatar: pick(AVATARS).id,
-    color: pick(AVATAR_COLORS).id,
-    createdAt: Date.now(),
-    stats: emptyStats(),
-    recent: [],
-  };
+  const user: StoredUser = { ...newUserFields(pseudo), password: hashed };
   try {
     // The unique index refuses a pseudo another sign-up took while hashing
     await users.insertOne({ ...user });
@@ -194,7 +260,8 @@ export const login = async (req: NextRequest, body: unknown) => {
   const key = pseudoKey(pseudo);
   if (await isPasswordLimited(req, key)) fail("too-many-attempts");
   const user = await findUserByKey(key);
-  if (!user) {
+  // Unknown, or made with Google without a password: no password opens it
+  if (!user || !user.password) {
     await burnPasswordCheck(password);
     await countPasswordFailure(req, key);
     return null;
@@ -220,7 +287,7 @@ export const login = async (req: NextRequest, body: unknown) => {
 const confirmPassword = async (req: NextRequest, user: StoredUser, password: unknown) => {
   await guardPassword(req, user);
   const checked = user.password;
-  if (typeof password !== "string" || !(await verifyPassword(password, checked))) {
+  if (!checked || typeof password !== "string" || !(await verifyPassword(password, checked))) {
     await countPasswordFailure(req, user.pseudoKey);
     fail("bad-credentials");
   }
@@ -258,11 +325,12 @@ export const updateProfile = async (user: StoredUser, body: unknown) => {
   }
 };
 
-/** New password; returns the user so the caller can end their other sessions */
+/** New password (or a first one, for an account made with Google: no current one to
+ * give); returns the user so the caller can end their other sessions */
 export const changePassword = async (req: NextRequest, user: StoredUser, body: unknown) => {
   const { current, next } = (body ?? {}) as Record<string, unknown>;
   if (checkPassword(next)) fail("invalid-password");
-  const confirmed = await confirmPassword(req, user, current);
+  const confirmed = user.password ? await confirmPassword(req, user, current) : user;
   const hashed = await hashPassword(next as string);
   // Changed or deleted while hashing: the password checked no longer applies
   if (!(await replacePassword(confirmed.id, confirmed.password, hashed))) {
@@ -271,8 +339,13 @@ export const changePassword = async (req: NextRequest, user: StoredUser, body: u
   return { ...confirmed, password: hashed };
 };
 
+/** Deletion, confirmed with the password, or by typing the pseudo for an account
+ * without password (made with Google) */
 export const deleteAccount = async (req: NextRequest, user: StoredUser, body: unknown) => {
-  const confirmed = await confirmPassword(req, user, (body as { password?: unknown } | null)?.password);
+  const { password, pseudo } = (body ?? {}) as Record<string, unknown>;
+  let confirmed = user;
+  if (user.password) confirmed = await confirmPassword(req, user, password);
+  else if (typeof pseudo !== "string" || pseudoKey(pseudo) !== user.pseudoKey) fail("bad-credentials");
   await (await usersCollection()).deleteOne({ id: confirmed.id });
   await (await sessionsCollection()).deleteMany({ userId: confirmed.id });
   // A ranked search in progress goes with the account

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import styles from "./Partie.module.css";
 import ui from "../../ui/common.module.css";
 import PageShell from "../../ui/PageShell";
 import { Button, ButtonLink } from "../../ui/Button";
@@ -29,7 +30,7 @@ export default function Partie() {
 
       <section className={ui.section}>
         <h2 className={ui.sectionTitle}>Options</h2>
-        <div className={ui.card}>
+        <div className={`${ui.card} ${styles.options}`}>
           {mode.levelOption && <LevelPicker />}
           {mode.sideOption && <SidePicker />}
           {mode.clockOption && <ClockPicker />}

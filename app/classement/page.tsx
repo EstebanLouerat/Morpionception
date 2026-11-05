@@ -26,11 +26,16 @@ const ROW_HEIGHT = 57;
 // The pager under the list, and the bottom margin of the page
 const BELOW_LIST = 76;
 
-/** Zoom applied by FitToScreen around an element (1 when none) */
-const zoomAround = (el: HTMLElement) => {
-  let zoom = 1;
-  for (let e: HTMLElement | null = el; e; e = e.parentElement) if (e.style.zoom) zoom *= Number(e.style.zoom);
-  return zoom;
+/** Where an element's top would be without FitToScreen's scale, in page pixels. The
+ * scaled content shrinks toward its own top left corner, so only the part below that
+ * corner is scaled. */
+const unscaledTop = (el: HTMLElement) => {
+  const top = el.getBoundingClientRect().top;
+  const fitted = el.closest<HTMLElement>("[data-scale]");
+  const scale = Number(fitted?.dataset.scale ?? 1);
+  if (!fitted || scale === 1) return { top, scale: 1 };
+  const origin = fitted.getBoundingClientRect().top;
+  return { top: origin + (top - origin) / scale, scale };
 };
 
 const useRowsThatFit = (list: React.RefObject<HTMLDivElement | null>, ready: boolean) => {
@@ -40,15 +45,18 @@ const useRowsThatFit = (list: React.RefObject<HTMLDivElement | null>, ready: boo
     const measure = () => {
       const el = list.current;
       if (!el) return;
-      const zoom = zoomAround(el);
-      // Unzoomed page units: the room as if the page were not zoomed out
-      const top = el.getBoundingClientRect().top / zoom;
-      const row = (el.querySelector("li")?.getBoundingClientRect().height ?? ROW_HEIGHT * zoom) / zoom;
+      const { top, scale } = unscaledTop(el);
+      const row = (el.querySelector("li")?.getBoundingClientRect().height ?? ROW_HEIGHT * scale) / scale;
       setRows(Math.max(3, Math.floor((window.innerHeight - top - BELOW_LIST) / row)));
     };
     measure();
+    // Again when the window changes, or when the page was scaled to fit after loading
     window.addEventListener("resize", measure);
-    return () => window.removeEventListener("resize", measure);
+    window.addEventListener("fitscale", measure);
+    return () => {
+      window.removeEventListener("resize", measure);
+      window.removeEventListener("fitscale", measure);
+    };
   }, [list, ready]);
   return rows;
 };

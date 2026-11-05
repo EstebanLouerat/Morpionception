@@ -10,4 +10,6 @@
   gap: clamp(0.75rem, 2.6dvh, 2rem);
   /* Room for the shadows of the cards */
   padding: 4px 6px 8px;
+  /* Scaled down from the top left corner when it needs to fit (see FitToScreen) */
+  transform-origin: 0 0;
 }

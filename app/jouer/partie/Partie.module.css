@@ -1,0 +1,9 @@
+/* Short landscape screens (a phone on its side): the options side by side */
+@media (orientation: landscape) and (max-height: 600px) {
+  .options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+    gap: 0.9rem 1.25rem;
+  }
+}

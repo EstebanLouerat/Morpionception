@@ -26,10 +26,10 @@ const ROW_HEIGHT = 57;
 // The pager under the list, and the bottom margin of the page
 const BELOW_LIST = 76;
 
-/** Zoom applied by FitToScreen around an element (1 when none) */
+/** Scale applied by FitToScreen around an element (1 when none) */
 const zoomAround = (el: HTMLElement) => {
   let zoom = 1;
-  for (let e: HTMLElement | null = el; e; e = e.parentElement) if (e.style.zoom) zoom *= Number(e.style.zoom);
+  for (let e: HTMLElement | null = el; e; e = e.parentElement) if (e.dataset.scale) zoom *= Number(e.dataset.scale);
   return zoom;
 };
 

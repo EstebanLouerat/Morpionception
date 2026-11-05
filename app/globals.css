@@ -118,12 +118,15 @@ textarea {
   --border: #9aa0b0;
   --surface-muted: #14151b;
 }
-/* Fewer animations: everything ends at once (framer-motion follows MotionConfig) */
+/* Fewer animations: animations end at once, transitions are off (framer-motion follows
+   MotionConfig). Not a short transition-duration: on elements without a transition of
+   their own (transition-property defaults to all) that would make every change
+   animate, layout measures included (FitToScreen read stale widths and flickered). */
 :root[data-motion="reduced"] *,
 :root[data-motion="reduced"] *::before,
 :root[data-motion="reduced"] *::after {
   animation-duration: 0.01ms !important;
   animation-iteration-count: 1 !important;
-  transition-duration: 0.01ms !important;
+  transition: none !important;
   scroll-behavior: auto !important;
 }

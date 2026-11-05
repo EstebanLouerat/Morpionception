@@ -211,6 +211,8 @@ const viewFor = (room: Room, you: Side, profiles: Map<string, PublicProfile>): R
 const takebackMoves = (room: Room, side: Side) => {
   const history = room.history ?? [];
   if (room.outcome || room.takeback || !room.seats.X || !room.seats.O) return 0;
+  // A round begun before moves were kept: its position cannot be rebuilt
+  if (history.length !== room.moves) return 0;
   if (room.seats.X.left || room.seats.O.left) return 0;
   if (room.takebackRefused?.by === side && room.takebackRefused.moves === room.moves) return 0;
   // X plays the moves 0, 2, 4…, O the moves 1, 3, 5…

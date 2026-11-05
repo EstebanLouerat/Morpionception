@@ -292,7 +292,7 @@ const OnlineBoard = ({ code, view, receivedAt, connected }: OnlineBoardProps) =>
               {theyAsk.moves === 1 ? "son dernier coup" : "son dernier coup et ta réponse"}.
             </span>
             <div>
-              <Button size="sm" onClick={() => answerTakeback(true)} disabled={answering}>
+              <Button size="sm" onClick={() => answerTakeback(true)} disabled={answering} autoFocus>
                 Accepter
               </Button>
               <Button size="sm" variant="secondary" onClick={() => answerTakeback(false)} disabled={answering}>

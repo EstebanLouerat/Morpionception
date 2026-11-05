@@ -204,7 +204,12 @@ export const linkGoogle = async (user: StoredUser, sub: string) => {
   const owner = await findUserByGoogle(sub);
   if (owner && owner.id !== user.id) fail("google-taken");
   try {
-    await (await usersCollection()).updateOne({ id: user.id }, { $set: { googleSub: sub } });
+    // Never replaces another Google account already linked (unlink it first)
+    const res = await (await usersCollection()).updateOne(
+      { id: user.id, $or: [{ googleSub: { $exists: false } }, { googleSub: sub }] },
+      { $set: { googleSub: sub } }
+    );
+    if (res.matchedCount === 0) fail("bad-request");
   } catch (e) {
     if (isDuplicateKey(e)) fail("google-taken");
     throw e;

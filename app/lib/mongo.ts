@@ -14,6 +14,13 @@ const createIndexes = (db: Db) =>
   Promise.all([
     db.collection("users").createIndex({ id: 1 }, { unique: true }),
     db.collection("users").createIndex({ pseudoKey: 1 }, { unique: true }),
+    // One account per Google account (accounts without Google are left out)
+    db
+      .collection("users")
+      .createIndex(
+        { googleSub: 1 },
+        { unique: true, partialFilterExpression: { googleSub: { $type: "string" } } }
+      ),
     db.collection("sessions").createIndex({ userId: 1 }),
     db.collection("sessions").createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 }),
     db.collection("attempts").createIndex({ key: 1, at: 1 }),

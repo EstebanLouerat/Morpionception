@@ -9,6 +9,7 @@ import { PLACEMENT_GAMES } from "./config";
 import type { RatingChange } from "./protocol";
 import { rankChange, rankOf, type Rank, type RankChangeKind } from "./rating";
 import { playFx } from "../audio/engine";
+import { motionReduced } from "../theme/appearance";
 
 // Counting the points, then the new rank shows up
 const COUNT_S = 1.3;
@@ -24,6 +25,7 @@ const BANNERS: Record<RankChangeKind, string> = {
 };
 
 const burst = (rank: Rank, big: boolean) => {
+  if (motionReduced()) return;
   const colors = [rank.tier.color, rank.tier.dark, "#ffffff"];
   // Above the end of game modal
   const shot = (angle: number, x: number) =>

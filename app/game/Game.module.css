@@ -71,6 +71,7 @@
 }
 
 .boardArea {
+  position: relative;
   flex: 1;
   min-height: 0;
   width: 100%;
@@ -515,4 +516,116 @@
     width: min(90vw, 420px);
     padding: 1.25rem;
   }
+}
+
+/* A question from the opponent, over the top of the grid (no layout change) */
+.prompt {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  z-index: 20;
+  translate: -50% 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  width: min(92%, 380px);
+  padding: 0.9rem 1rem;
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow:
+    0 0 0 2px var(--primary-o),
+    0 10px 30px var(--shadow);
+  text-align: center;
+  font-weight: 700;
+}
+.prompt > div {
+  display: flex;
+  gap: 0.6rem;
+  width: 100%;
+}
+.prompt > div > * {
+  flex: 1;
+}
+
+/* --- Accessibility (Paramètres > Accessibilité) --- */
+/* Bigger cells: less room around and between the boards, the grid may grow more */
+:global(:root[data-board="large"]) .superBoard {
+  width: min(100cqw, 100cqh, 920px);
+  gap: clamp(4px, 1.3cqmin, 10px);
+}
+:global(:root[data-board="large"]) .board {
+  padding: clamp(2px, 2.5cqi, 6px);
+}
+:global(:root[data-board="large"]) .title {
+  font-size: clamp(1.2rem, 3.5dvh, 2rem);
+}
+:global(:root[data-board="large"]) .boardArea,
+:global(:root[data-board="max"]) .boardArea {
+  margin: clamp(0.25rem, 1dvh, 0.6rem) 0;
+}
+:global(:root[data-board="large"]) .numpadHint,
+:global(:root[data-board="max"]) .numpadHint,
+:global(:root[data-board="max"]) .title {
+  display: none;
+}
+/* The whole room: the grid as big as the screen, the title gone */
+:global(:root[data-board="max"]) .superBoard {
+  width: min(100cqw, 100cqh);
+  gap: 3px;
+}
+:global(:root[data-board="max"]) .board {
+  padding: 2px;
+  gap: 2px;
+}
+/* Without the title, the players keep clear of the settings button (top right) */
+:global(:root[data-board="max"]) .players {
+  padding-right: 50px;
+}
+:global(:root[data-board="max"]) .container {
+  padding-top: 0.75rem;
+}
+@media (max-width: 600px) {
+  :global(:root[data-board="max"]) .container {
+    padding: 0.6rem 0.4rem;
+  }
+}
+
+/* Big symbols */
+:global(:root[data-symbols="big"]) .cell {
+  font-size: 27cqi;
+  font-weight: 900;
+}
+
+/* High contrast */
+:global(:root[data-contrast="high"]) .cell {
+  box-shadow: inset 0 0 0 1.5px var(--border);
+}
+:global(:root[data-contrast="high"]) .cell:disabled {
+  opacity: 1;
+}
+:global(:root[data-contrast="high"]) .board {
+  border: 2px solid var(--text);
+}
+:global(:root[data-contrast="high"]) .board.active-x,
+:global(:root[data-contrast="high"]) .board.active-o {
+  border-width: 4px;
+  outline: 3px solid currentColor;
+  outline-offset: 2px;
+}
+:global(:root[data-contrast="high"]) .board.active-x {
+  color: var(--primary-x);
+  border-color: var(--primary-x);
+}
+:global(:root[data-contrast="high"]) .board.active-o {
+  color: var(--primary-o);
+  border-color: var(--primary-o);
+}
+:global(:root[data-contrast="high"]) .boardWinner {
+  opacity: 0.9;
+  text-shadow: 0 0 2px var(--surface), 0 0 6px var(--surface);
+}
+:global(:root[data-contrast="high"]) .cell.lastMove {
+  background: color-mix(in srgb, currentColor 35%, var(--surface));
+  box-shadow: inset 0 0 0 3px currentColor;
 }

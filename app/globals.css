@@ -105,3 +105,25 @@ select,
 textarea {
   font-size: 16px;
 }
+
+/* --- Accessibility (Paramètres > Accessibilité, attributes set by app/theme) --- */
+/* High contrast: darker secondary text and borders */
+:root[data-contrast="high"] {
+  --text-muted: #2d3436;
+  --border: #636e72;
+  --surface-muted: #ffffff;
+}
+:root[data-theme="dark"][data-contrast="high"] {
+  --text-muted: #e4e6ee;
+  --border: #9aa0b0;
+  --surface-muted: #14151b;
+}
+/* Fewer animations: everything ends at once (framer-motion follows MotionConfig) */
+:root[data-motion="reduced"] *,
+:root[data-motion="reduced"] *::before,
+:root[data-motion="reduced"] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}

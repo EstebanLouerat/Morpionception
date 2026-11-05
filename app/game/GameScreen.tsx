@@ -8,6 +8,7 @@ import { playFx } from "../audio/engine";
 import { IconLink } from "../ui/Button";
 import PlayerBar from "./PlayerBar";
 import FitToScreen from "../ui/FitToScreen";
+import { motionReduced, useAppearance } from "../theme/appearance";
 import type { GameMode } from "./modes";
 import type { PublicProfile } from "../account/protocol";
 import type { RankedRating } from "../ranked/protocol";
@@ -82,6 +83,8 @@ type GameScreenProps = {
   controls: ReactNode;
   /** Content of the modal shown once the game is over */
   endModal: ReactNode;
+  /** A question from the opponent (a take-back), shown above the grid */
+  prompt?: ReactNode;
 };
 
 /** The game screen: players, super board with mouse and numpad controls, end modal */
@@ -101,6 +104,7 @@ export default function GameScreen({
   notice,
   controls,
   endModal,
+  prompt,
 }: GameScreenProps) {
   const [isSidePanelOpened, setIsSidePanelOpened] = useState(false);
   const [showModal, setShowModal] = useState(false);
@@ -109,6 +113,8 @@ export default function GameScreen({
 
   const { superBoard, winners, currentPlayer } = state;
   const lastMove = state.lastMove ?? null;
+  // High contrast: the boards that cannot be played stay readable
+  const { highContrast } = useAppearance();
   const winner = outcome?.winner ?? null;
   const isDraw = outcome?.reason === "draw";
   const gameOver = !!outcome;
@@ -194,7 +200,7 @@ export default function GameScreen({
     if (winner) {
       // Online, only the winner gets the celebration
       if (!you || winner === you) {
-        confetti({ particleCount: 150, spread: 90, origin: { y: 0.6 } });
+        if (!motionReduced()) confetti({ particleCount: 150, spread: 90, origin: { y: 0.6 } });
         playFx("gameWin", 0.4);
       } else {
         playFx("gameLose", 0.4);
@@ -293,6 +299,20 @@ export default function GameScreen({
 
       {/* Super Board, as big as the room left on screen allows */}
       <div className={styles.boardArea}>
+      <AnimatePresence>
+        {prompt && !gameOver && (
+          <motion.div
+            className={styles.prompt}
+            role="alertdialog"
+            initial={{ y: -16, opacity: 0, scale: 0.96 }}
+            animate={{ y: 0, opacity: 1, scale: 1 }}
+            exit={{ y: -16, opacity: 0 }}
+            transition={{ type: "spring", stiffness: 380, damping: 26 }}
+          >
+            {prompt}
+          </motion.div>
+        )}
+      </AnimatePresence>
       <div className={styles.superBoard}>
         {superBoard.map((board, idx) => (
           <motion.div
@@ -307,7 +327,7 @@ export default function GameScreen({
               `}
             animate={{
               scale: focusedBoard === null || focusedBoard === idx ? 1 : 0.9,
-              opacity: focusedBoard === null || focusedBoard === idx ? 1 : 0.4,
+              opacity: focusedBoard === null || focusedBoard === idx ? 1 : highContrast ? 0.8 : 0.4,
             }}
             transition={{ type: "spring", stiffness: 300 }}
           >

@@ -92,6 +92,17 @@ export const checkPseudo = (raw: unknown): PseudoCheck => {
   return { ok: true, pseudo };
 };
 
+/** A valid pseudo made from a name (e.g. a Google profile's): letters kept, spaces
+ * and other characters dropped, cut to `max` characters; null when too little is left */
+export const pseudoFromName = (name: string, max = PSEUDO_MAX) => {
+  const kept = [...normalizePseudo(name).replace(/\s+/g, "")]
+    .filter((c) => new RegExp(`[${LETTER}_.-]`).test(c))
+    .slice(0, max)
+    .join("")
+    .replace(/^[_.-]+|[_.-]+$/g, "");
+  return checkPseudo(kept).ok ? kept : null;
+};
+
 export const checkPassword = (raw: unknown): string | null => {
   const length = typeof raw === "string" ? [...raw.normalize("NFC")].length : 0;
   if (length < PASSWORD_MIN) return `Le mot de passe fait au moins ${PASSWORD_MIN} caractères.`;

@@ -1,17 +1,21 @@
 "use client";
 import { useEffect } from "react";
 import { getAppearance, subscribeAppearance } from "./appearance";
+import { accessibilityAttributes } from "./constants";
 
-// Keeps <html data-theme / data-palette> in sync with the saved appearance
+// Keeps <html data-theme / data-palette / accessibility attributes> in sync with the
+// saved appearance
 const ThemeManager = () => {
   useEffect(() => {
     const media = matchMedia("(prefers-color-scheme: dark)");
     const apply = () => {
-      const { theme, palette } = getAppearance();
+      const appearance = getAppearance();
+      const { theme, palette } = appearance;
       const root = document.documentElement;
       root.dataset.theme =
         theme === "system" ? (media.matches ? "dark" : "light") : theme;
       root.dataset.palette = palette;
+      Object.assign(root.dataset, accessibilityAttributes(appearance));
     };
     apply();
     const unsubscribe = subscribeAppearance(apply);

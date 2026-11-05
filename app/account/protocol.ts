@@ -46,7 +46,14 @@ export type AccountView = PublicProfile & {
   recent: GameRecord[];
   /** Ranked play, null before the first ranked game */
   ranked: RankedSummary | null;
+  /** Can log in with a password (an account made with Google may have none) */
+  hasPassword: boolean;
+  /** A Google account is linked: log-in with Google */
+  google: boolean;
 };
+
+/** Ways to log in the server offers besides the pseudo and password */
+export type Providers = { google: boolean };
 
 export type AccountError =
   | "bad-request"
@@ -61,6 +68,8 @@ export type AccountError =
   | "accounts-full"
   | "storage-unavailable"
   | "forbidden-origin"
+  | "google-taken"
+  | "needs-password"
   | "network";
 
 export const ACCOUNT_ERROR_MESSAGES: Record<AccountError, string> = {
@@ -76,6 +85,8 @@ export const ACCOUNT_ERROR_MESSAGES: Record<AccountError, string> = {
   "accounts-full": "Le serveur n'accepte plus de nouveaux comptes pour l'instant.",
   "storage-unavailable": "Les comptes sont indisponibles pour l'instant, réessaie plus tard.",
   "forbidden-origin": "Requête refusée.",
+  "google-taken": "Ce compte Google est déjà associé à un autre compte.",
+  "needs-password": "Définis d'abord un mot de passe, sinon tu ne pourrais plus te connecter.",
   network: "Impossible de joindre le serveur. Vérifie ta connexion.",
 };
 

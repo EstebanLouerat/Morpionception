@@ -10,6 +10,8 @@ export type Fx =
   | "placeO"
   | "select"
   | "click"
+  /** The opponent asks something (a take-back) */
+  | "request"
   | "invalid"
   | "boardWon"
   | "boardDraw"
@@ -144,6 +146,7 @@ const FX: Record<Fx, (t: number) => void> = {
     arpeggio(t, [67, 74], 0.1, 0.18, { type: "square", gain: 0.08 });
     tone(fxBus, t + 0.22, midiToFreq(79), 0.4, { type: "triangle", gain: 0.2 });
   },
+  request: (t) => arpeggio(t, [72, 79], 0.12, 0.16, { type: "triangle", gain: 0.16 }),
   pointsTick: (t) => tone(fxBus, t, 1568, 0.035, { gain: 0.05 }),
   rankUp: (t) => {
     // A rising sweep, then a bright chord that rings

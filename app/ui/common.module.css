@@ -18,8 +18,9 @@
 .card {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
-  padding: 1.5rem;
+  /* Tighter on short screens, so pages fit without scrolling */
+  gap: clamp(0.75rem, 2dvh, 1.25rem);
+  padding: clamp(1rem, 2.6dvh, 1.5rem);
   border-radius: 16px;
   background: var(--surface);
   box-shadow: 0 4px 12px var(--shadow);

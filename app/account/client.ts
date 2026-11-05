@@ -1,8 +1,9 @@
 // The logged-in account in the browser: loaded once, shared by every page.
-import { useEffect, useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { request } from "../lib/request";
+import { sameSitePath } from "./returnPath";
 import type { AvatarId, ColorId } from "./profile";
-import type { AccountError, AccountView } from "./protocol";
+import type { AccountError, AccountView, Providers } from "./protocol";
 
 export type AccountState =
   | { status: "loading"; account: null }
@@ -106,20 +107,63 @@ export const updateProfile = (changes: { pseudo?: string; avatar?: AvatarId; col
   call<AccountResult>("PATCH", "/api/account", changes, (d) => setAccount(d.account));
 
 export const changePassword = (current: string, next: string) =>
-  call<{ ok: true }>("POST", "/api/account/password", { current, next });
+  // A first password changes what the account pages offer (hasPassword)
+  call<{ ok: true }>("POST", "/api/account/password", { current, next }, () => void refreshAccount());
 
-export const deleteAccount = (password: string) =>
-  call<{ ok: true }>("POST", "/api/account/delete", { password }, () => setAccount(null));
+/** Deletion, confirmed with the password (or the pseudo, for an account without one) */
+export const deleteAccount = (confirm: { password?: string; pseudo?: string }) =>
+  call<{ ok: true }>("POST", "/api/account/delete", confirm, () => setAccount(null));
 
-/** Where to go back after logging in (?retour=…): only a page of this site. The value
- * is resolved like the browser would ("/\t/evil.example" is another site once the tab
- * is dropped), and refused if it lands anywhere else. */
-export const safeReturnPath = (raw: string | null) => {
-  if (!raw || !raw.startsWith("/") || /[\u0000-\u001F\u007F\\]/.test(raw)) return null;
-  try {
-    const url = new URL(raw, window.location.origin);
-    return url.origin === window.location.origin ? url.pathname + url.search + url.hash : null;
-  } catch {
-    return null;
-  }
+/** Unlinks Google from the account */
+export const unlinkGoogle = () =>
+  call<AccountResult>("POST", "/api/account/google/unlink", {}, (d) => setAccount(d.account));
+
+// --- Log-in with Google ---
+
+let providers: Promise<Providers> | null = null;
+
+/** Ways to log in the server offers (asked once) */
+const fetchProviders = () =>
+  (providers ??= request<Providers, AccountError>("GET", "/api/account/providers").then((res) =>
+    res.ok ? res.data : { google: false }
+  ));
+
+/** null until known */
+export const useProviders = () => {
+  const [value, setValue] = useState<Providers | null>(null);
+  useEffect(() => {
+    let live = true;
+    fetchProviders().then((p) => live && setValue(p));
+    return () => {
+      live = false;
+    };
+  }, []);
+  return value;
 };
+
+/** The address that starts a log-in with Google (a full page change: Google's page) */
+export const googleHref = (opts: { link?: boolean; back?: string | null } = {}) => {
+  const params = new URLSearchParams();
+  if (opts.link) params.set("mode", "link");
+  if (opts.back) params.set("retour", opts.back);
+  const query = params.toString();
+  return `/api/account/google${query ? `?${query}` : ""}`;
+};
+
+/** What the account pages say after coming back from Google (?google=…) */
+export const GOOGLE_NOTES: Record<string, { kind: "error" | "success"; text: string }> = {
+  bienvenue: {
+    kind: "success",
+    text: "Compte créé avec Google ! Ton pseudo vient de ton nom : tu peux le changer dans ton profil.",
+  },
+  lie: { kind: "success", text: "Compte Google associé : tu peux maintenant te connecter avec." },
+  annule: { kind: "error", text: "Connexion avec Google annulée." },
+  echec: { kind: "error", text: "La connexion avec Google n'a pas abouti, réessaie." },
+  "deja-lie": { kind: "error", text: "Ce compte Google est déjà associé à un autre compte." },
+  trop: { kind: "error", text: "Trop de comptes créés récemment, réessaie dans une heure." },
+  plein: { kind: "error", text: "Le serveur n'accepte plus de nouveaux comptes pour l'instant." },
+  indisponible: { kind: "error", text: "La connexion avec Google n'est pas disponible sur ce serveur." },
+};
+
+/** Where to go back after logging in (?retour=…): only a page of this site */
+export const safeReturnPath = (raw: string | null) => sameSitePath(raw, window.location.origin);

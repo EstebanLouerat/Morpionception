@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import styles from "./Profil.module.css";
 import compte from "../Compte.module.css";
 import ui from "../../ui/common.module.css";
@@ -12,12 +12,17 @@ import { Button } from "../../ui/Button";
 import { playFx } from "../../audio/engine";
 import Avatar from "../../account/Avatar";
 import PasswordField from "../PasswordField";
+import GoogleButton from "../GoogleButton";
 import {
+  GOOGLE_NOTES,
   changePassword,
   deleteAccount,
+  googleHref,
   refreshAccount,
+  unlinkGoogle,
   updateProfile,
   useAccount,
+  useProviders,
 } from "../../account/client";
 import {
   AVATARS,
@@ -48,6 +53,13 @@ const Feedback = ({ message, id }: { message: Message; id?: string }) =>
 export default function Profil() {
   const router = useRouter();
   const account = useAccount();
+  const params = useSearchParams();
+  // Back from Google (?onglet=security&google=…): that tab, and what happened
+  const [tab] = useState(() => params.get("onglet"));
+  const [googleNote] = useState(() => GOOGLE_NOTES[params.get("google") ?? ""] ?? null);
+  useEffect(() => {
+    if (params.get("google")) router.replace("/compte/profil");
+  }, [params, router]);
 
   useEffect(() => {
     refreshAccount();
@@ -66,6 +78,7 @@ export default function Profil() {
         <Tabs
           label="Réglages du compte"
           allOnWide
+          initial={tab ?? undefined}
           tabs={[
             { id: "profile", label: "Profil", content: <ProfileForm account={account.account} /> },
             {
@@ -73,8 +86,9 @@ export default function Profil() {
               label: "Sécurité",
               content: (
                 <>
-                  <PasswordForm pseudo={account.account.pseudo} />
-                  <DeleteAccount />
+                  <GoogleSection account={account.account} note={googleNote} />
+                  <PasswordForm account={account.account} />
+                  <DeleteAccount account={account.account} />
                 </>
               ),
             },
@@ -210,7 +224,53 @@ const ProfileForm = ({ account }: { account: AccountView }) => {
   );
 };
 
-const PasswordForm = ({ pseudo }: { pseudo: string }) => {
+/** Google: linked (log-in with it) or not (link it) */
+const GoogleSection = ({ account, note }: { account: AccountView; note: Message }) => {
+  const providers = useProviders();
+  const [message, setMessage] = useState<Message>(note);
+  const [sending, setSending] = useState(false);
+  if (!account.google && !providers?.google) return null;
+  const unlink = async () => {
+    setSending(true);
+    const res = await unlinkGoogle();
+    setSending(false);
+    setMessage(
+      res.ok
+        ? { kind: "success", text: "Google dissocié : connecte-toi avec ton pseudo et ton mot de passe." }
+        : { kind: "error", text: ACCOUNT_ERROR_MESSAGES[res.error] }
+    );
+  };
+  return (
+    <section className={ui.section}>
+      <h2 className={ui.sectionTitle}>Google</h2>
+      <div className={ui.card}>
+        {account.google ? (
+          <>
+            <p className={ui.muted}>Ton compte est associé à Google : tu peux te connecter avec.</p>
+            {account.hasPassword ? (
+              <Button variant="secondary" onClick={unlink} disabled={sending}>
+                Dissocier Google
+              </Button>
+            ) : (
+              <p className={`${ui.muted} ${compte.hint}`}>
+                Définis un mot de passe ci-dessous pour pouvoir dissocier Google.
+              </p>
+            )}
+          </>
+        ) : (
+          <>
+            <p className={ui.muted}>Associe ton compte Google pour te connecter en un clic.</p>
+            <GoogleButton href={googleHref({ link: true })} label="Associer mon compte Google" />
+          </>
+        )}
+        <Feedback message={message} />
+      </div>
+    </section>
+  );
+};
+
+const PasswordForm = ({ account }: { account: AccountView }) => {
+  const { pseudo, hasPassword } = account;
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
   const [message, setMessage] = useState<Message>(null);
@@ -219,7 +279,8 @@ const PasswordForm = ({ pseudo }: { pseudo: string }) => {
   const save = async (e: FormEvent) => {
     e.preventDefault();
     const error = checkPassword(next);
-    if (!current) return setMessage({ kind: "error", text: "Entre ton mot de passe actuel." });
+    if (hasPassword && !current)
+      return setMessage({ kind: "error", text: "Entre ton mot de passe actuel." });
     if (error) return setMessage({ kind: "error", text: error });
     setSaving(true);
     const res = await changePassword(current, next);
@@ -229,7 +290,9 @@ const PasswordForm = ({ pseudo }: { pseudo: string }) => {
       setNext("");
       setMessage({
         kind: "success",
-        text: "Mot de passe changé. Tes autres appareils ont été déconnectés.",
+        text: hasPassword
+          ? "Mot de passe changé. Tes autres appareils ont été déconnectés."
+          : "Mot de passe défini : tu peux aussi te connecter avec ton pseudo.",
       });
     } else {
       playFx("invalid");
@@ -249,17 +312,24 @@ const PasswordForm = ({ pseudo }: { pseudo: string }) => {
       <form className={ui.card} onSubmit={save} noValidate>
         {/* Lets password managers know which account this is */}
         <input type="text" name="username" autoComplete="username" value={pseudo} hidden readOnly />
-        <div className={compte.field}>
-          <label className={compte.fieldLabel} htmlFor="password-current">
-            Mot de passe actuel
-          </label>
-          <PasswordField
-            id="password-current"
-            value={current}
-            onChange={(e) => setCurrent(e.target.value)}
-            autoComplete="current-password"
-          />
-        </div>
+        {hasPassword ? (
+          <div className={compte.field}>
+            <label className={compte.fieldLabel} htmlFor="password-current">
+              Mot de passe actuel
+            </label>
+            <PasswordField
+              id="password-current"
+              value={current}
+              onChange={(e) => setCurrent(e.target.value)}
+              autoComplete="current-password"
+            />
+          </div>
+        ) : (
+          <p className={`${ui.muted} ${compte.hint}`}>
+            Ton compte a été créé avec Google. Définis un mot de passe pour te connecter aussi
+            avec ton pseudo.
+          </p>
+        )}
         <div className={compte.field}>
           <label className={compte.fieldLabel} htmlFor="password-next">
             Nouveau mot de passe
@@ -273,14 +343,15 @@ const PasswordForm = ({ pseudo }: { pseudo: string }) => {
         </div>
         <Feedback message={message} />
         <Button type="submit" variant="secondary" fullWidth disabled={saving}>
-          {saving ? "Un instant…" : "Changer le mot de passe"}
+          {saving ? "Un instant…" : hasPassword ? "Changer le mot de passe" : "Définir le mot de passe"}
         </Button>
       </form>
     </section>
   );
 };
 
-const DeleteAccount = () => {
+const DeleteAccount = ({ account }: { account: AccountView }) => {
+  const { hasPassword } = account;
   const [open, setOpen] = useState(false);
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState<Message>(null);
@@ -288,9 +359,13 @@ const DeleteAccount = () => {
 
   const confirm = async (e: FormEvent) => {
     e.preventDefault();
-    if (!password) return setMessage({ kind: "error", text: "Entre ton mot de passe." });
+    if (!password)
+      return setMessage({
+        kind: "error",
+        text: hasPassword ? "Entre ton mot de passe." : "Tape ton pseudo pour confirmer.",
+      });
     setDeleting(true);
-    const res = await deleteAccount(password);
+    const res = await deleteAccount(hasPassword ? { password } : { pseudo: password });
     // Success: the account is gone, the page goes back to /compte
     if (res.ok) return;
     setDeleting(false);
@@ -299,7 +374,9 @@ const DeleteAccount = () => {
       kind: "error",
       text:
         res.error === "bad-credentials"
-          ? "Mot de passe incorrect."
+          ? hasPassword
+            ? "Mot de passe incorrect."
+            : "Ce n'est pas ton pseudo."
           : ACCOUNT_ERROR_MESSAGES[res.error],
     });
   };
@@ -315,14 +392,26 @@ const DeleteAccount = () => {
           <>
             <div className={compte.field}>
               <label className={compte.fieldLabel} htmlFor="delete-password">
-                Mot de passe
+                {hasPassword ? "Mot de passe" : `Tape ton pseudo (${account.pseudo}) pour confirmer`}
               </label>
-              <PasswordField
-                id="delete-password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                autoComplete="current-password"
-              />
+              {hasPassword ? (
+                <PasswordField
+                  id="delete-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoComplete="current-password"
+                />
+              ) : (
+                <input
+                  id="delete-password"
+                  className={ui.input}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoComplete="off"
+                  autoCapitalize="none"
+                  spellCheck={false}
+                />
+              )}
             </div>
             <Feedback message={message} />
             <div className={ui.row}>

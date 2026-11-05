@@ -21,7 +21,7 @@ import {
   type Outcome,
 } from "./rules";
 
-type SavedGame = { game: GameState; clockLimit: number; clocks: Clocks };
+type SavedGame = { game: GameState; clockLimit: number; clocks: Clocks; history: GameState[] };
 
 /** The saved game, if it is one of this mode (games saved before modes were local) */
 const loadSavedGame = (mode: ModeId): SavedGame | null => {
@@ -42,6 +42,7 @@ const loadSavedGame = (mode: ModeId): SavedGame | null => {
       },
       clockLimit,
       clocks: parsed.clocks ?? fullClocks(clockLimit),
+      history: Array.isArray(parsed.history) ? parsed.history : [],
     };
   } catch (e) {
     console.error("Échec du parsing localStorage", e);
@@ -61,9 +62,11 @@ export default function LocalGame() {
     if (saved) return saved;
     // Chrono of a new game: the option picked before the game, if the mode supports it
     const clockLimit = mode.clockOption ? getClockSettings().seconds : 0;
-    return { game: newGameState(), clockLimit, clocks: fullClocks(clockLimit) };
+    return { game: newGameState(), clockLimit, clocks: fullClocks(clockLimit), history: [] };
   });
   const [game, setGame] = useState(initial.game);
+  // Positions before each move, to take one back (a misclick)
+  const [history, setHistory] = useState<GameState[]>(initial.history);
   // Seconds per player for the whole game (0 = no chrono) and the time left in ms
   const [clockLimit] = useState(initial.clockLimit);
   const [clocks, setClocks] = useState(initial.clocks);
@@ -80,11 +83,22 @@ export default function LocalGame() {
   const clockRunning = clockLimit > 0 && hasStarted(game.superBoard) && !gameOver;
 
   useEffect(() => {
-    const gameState = { mode: mode.id, over: gameOver, ...game, clockLimit, clocks };
+    const gameState = { mode: mode.id, over: gameOver, ...game, clockLimit, clocks, history };
     localStorage.setItem(gameStorageKey(mode.id), JSON.stringify(gameState));
-  }, [mode.id, gameOver, game, clockLimit, clocks]);
+  }, [mode.id, gameOver, game, clockLimit, clocks, history]);
+
+  const play = (board: number, cell: number) => {
+    setHistory((h) => [...h, game]);
+    setGame(applyMove(game, board, cell));
+  };
+  const undo = () => {
+    if (!history.length) return;
+    setGame(history[history.length - 1]);
+    setHistory((h) => h.slice(0, -1));
+  };
 
   const resetGame = () => {
+    setHistory([]);
     setGame(newGameState());
     // Same chrono as the game that ends
     setClocks(fullClocks(clockLimit));
@@ -120,10 +134,19 @@ export default function LocalGame() {
       outcome={outcome}
       clocks={clockLimit > 0 ? clocks : null}
       canPlay={!gameOver}
-      onPlay={(board, cell) => setGame(applyMove(game, board, cell))}
+      onPlay={play}
       settingsHref={`/parametres?from=game&mode=${mode.id}`}
       controls={
         <>
+          <Button
+            className={styles.ctrlBtn}
+            variant="secondary"
+            onClick={undo}
+            disabled={!history.length || gameOver}
+            title="Annuler le dernier coup"
+          >
+            Annuler
+          </Button>
           <Button className={styles.ctrlBtn} onClick={resetGame}>
             Recommencer
           </Button>

@@ -30,6 +30,12 @@ export type RoomAction =
   | { type: "resign" }
   | { type: "claim" }
   | { type: "leave" }
+  /** Asks the opponent to take back your last move (and their reply, if any) */
+  | { type: "takeback" }
+  /** Withdraws your request */
+  | { type: "takeback-cancel" }
+  /** Answers the opponent's request */
+  | { type: "takeback-answer"; accept: boolean }
   /** An open page of the player says it is still there, or (gone) that it closes */
   | { type: "presence"; page: string; gone?: boolean };
 
@@ -48,6 +54,7 @@ export type RoomError =
   | "not-over"
   | "opponent-left"
   | "not-claimable"
+  | "no-takeback"
   | "too-many-rooms"
   | "storage-unavailable"
   | "network";
@@ -64,10 +71,14 @@ export const ERROR_MESSAGES: Record<RoomError, string> = {
   "not-over": "La partie n'est pas terminée.",
   "opponent-left": "Ton ami a quitté le salon.",
   "not-claimable": "Ton ami n'est pas absent depuis assez longtemps.",
+  "no-takeback": "Il n'y a pas de coup à reprendre.",
   "too-many-rooms": "Trop de salons ouverts, réessaie dans quelques minutes.",
   "storage-unavailable": "Le serveur est indisponible pour l'instant, réessaie plus tard.",
   network: "Impossible de joindre le serveur. Vérifie ta connexion.",
 };
+
+/** by: who asks; moves: how many moves would be taken back (theirs, and the reply) */
+export type TakebackRequest = { by: Side; moves: number };
 
 export type PlayerInfo = {
   /** Took a seat in the room */
@@ -106,6 +117,12 @@ export type RoomView = {
   ranked: Record<Side, RankedRating> | null;
   /** The ranked game is rated: ratings before and after (arrives just after the result) */
   ratings: Record<Side, RatingChange> | null;
+  /** A request to take back moves, waiting for the other player's answer */
+  takeback: TakebackRequest | null;
+  /** You may ask to take back your last move now */
+  canTakeback: boolean;
+  /** Your request was just refused (until the position changes) */
+  takebackRefused: boolean;
   /** The ranked game could not be rated (an account was deleted): no points */
   unrated: boolean;
   /** How long the other player must have been away before the win can be claimed */

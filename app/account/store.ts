@@ -33,7 +33,10 @@ export type StoredUser = {
   pseudo: string;
   /** Pseudo without case and accents, unique */
   pseudoKey: string;
-  password: StoredPassword;
+  /** null for an account made with Google that has no password (yet) */
+  password: StoredPassword | null;
+  /** Google account linked (its stable "sub" id): log-in with Google. No e-mail kept. */
+  googleSub?: string;
   avatar: AvatarId;
   color: ColorId;
   createdAt: number;
@@ -82,10 +85,11 @@ export const normalizeUser = (user: StoredUser): StoredUser => {
   };
 };
 
-const findOne = async (filter: Partial<Pick<StoredUser, "id" | "pseudoKey">>) => {
+const findOne = async (filter: Partial<Pick<StoredUser, "id" | "pseudoKey" | "googleSub">>) => {
   const user = await (await usersCollection()).findOne(filter, NO_ID);
   return user && normalizeUser(user);
 };
 
 export const findUser = (id: string) => findOne({ id });
 export const findUserByKey = (key: string) => findOne({ pseudoKey: key });
+export const findUserByGoogle = (sub: string) => findOne({ googleSub: sub });

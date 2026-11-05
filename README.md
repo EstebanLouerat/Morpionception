@@ -31,9 +31,12 @@ Ultimate tic-tac-toe ("morpion" in French) built with Next.js, React and Framer 
   optional chrono, real-time moves, opponent online status, resign, rematch
   (sides swap) and reconnection after a refresh. A player who stays offline for
   2 minutes lets the other one claim the win.
-- Accounts (`/compte`): sign up with a pseudo and a password (no e-mail), log
-  in, log out, change the password, delete the account. Playing never requires
-  an account.
+- Take-backs (misclicks): in an online game, ask the opponent to take back your
+  last move (and their reply, if they already played); they accept or refuse. In a
+  local game, "Annuler" takes back the last move.
+- Accounts (`/compte`): sign up with a pseudo and a password (no e-mail), or
+  with Google; log in, log out, change the password, link or unlink Google,
+  delete the account. Playing never requires an account.
 - Profile (`/compte/profil`): pseudo, emoji avatar and color, shown in the home
   top bar and to the opponent in online games.
 - Stats for online games of logged-in players: games, wins, win rate, best
@@ -53,6 +56,10 @@ Ultimate tic-tac-toe ("morpion" in French) built with Next.js, React and Framer 
   silver or bronze crown on their avatar: on the home page, the account page and
   next to their symbol in every online game.
 - Light / dark theme and three player color palettes.
+- Accessibility (Paramètres > Accessibilité): bigger cells (Normale, Grande, or
+  Maximale: the grid takes the whole screen), big X and O, high contrast (visible
+  borders, the board to play strongly marked, nothing faded) and fewer animations.
+  Applied before the first paint, like the theme.
 
 ## Roadmap
 
@@ -122,11 +129,17 @@ server, so a player who runs out of time loses even if nobody plays.
 | ----------------------------- | ------------------------------------------------------- |
 | `POST /api/rooms`             | Create a room (`{ side, clock }`), get a seat token     |
 | `POST /api/rooms/:code`       | `join`, `move`, `resign`, `claim`, `rematch` or `leave` |
+|                               | `takeback`, `takeback-cancel`, `takeback-answer`        |
 | `GET /api/rooms/:code/events` | Live room updates (server-sent events)                  |
 
 Each player's seat token is saved in `localStorage`, so a refresh gets the same
 seat back. Leaving a game in progress gives it up. Once the other player has
 been offline for 2 minutes, `claim` ends the game as a win.
+
+A take-back request (`takeback`) undoes the asker's last move, and the reply played
+since if any, once the other player accepts (`takeback-answer`, `{ accept }`). Any
+move cancels a request; after a refusal the same position cannot be asked about
+again. The time spent stays spent.
 
 Rooms are saved in MongoDB (`rooms` collection), so the app works with several
 server instances at once, as on Vercel. A change is saved only if the room has not
@@ -158,7 +171,11 @@ claimed after 2 minutes of absence counts as a forfeit.
 | `POST /api/account/logout`   | Ends the session                                |
 | `PATCH /api/account`         | `{ pseudo?, avatar?, color? }`                  |
 | `POST /api/account/password` | `{ current, next }`, logs out the other devices |
-| `POST /api/account/delete`   | `{ password }`                                  |
+| `POST /api/account/delete`   | `{ password }` (`{ pseudo }` without password)  |
+| `GET /api/account/providers` | `{ google }`: whether Google log-in is offered  |
+| `GET /api/account/google`    | Starts a Google log-in (`?mode=link&retour=…`)  |
+| `GET …/google/callback`      | Google sends the player back here               |
+| `POST …/google/unlink`       | Unlinks Google (only with a password)           |
 
 Settings (environment variables):
 
@@ -169,11 +186,37 @@ Settings (environment variables):
 | `MORPION_MAX_ACCOUNTS`   | Accounts the server accepts (default 5000)                               |
 | `MORPION_SECURE_COOKIES` | `1` forces Secure cookies (HTTPS proxy that does not say so)             |
 | `MORPION_IP_HEADER`      | Header with the client address for rate limits (e.g. `cf-connecting-ip`) |
+| `GOOGLE_CLIENT_ID`       | Google OAuth client ID: with the secret, offers "Continuer avec Google"  |
+| `GOOGLE_CLIENT_SECRET`   | Google OAuth client secret (keep it in a sensitive variable)             |
+| `MORPION_PUBLIC_URL`     | Site address for Google's redirect, if the proxy hides it                |
 
 The limits on wrong passwords per address only work behind a proxy that sets
 `X-Forwarded-For` (Vercel does, or use `MORPION_IP_HEADER`): without one, a client
 can claim any address. The limits per account and for the whole server work in
 every case.
+
+### Log-in with Google
+
+Google asks only for the account's id and name (scope `openid profile`): no e-mail
+is read or kept. The first log-in makes an account with a pseudo taken from the name
+(changed in the profile); a Google account can also be linked to an existing account
+in Profil > Sécurité. An account made with Google can set a password later, and is
+deleted by typing its pseudo.
+
+To turn it on:
+
+1. In the [Google Cloud console](https://console.cloud.google.com/), create a
+   project, then under *APIs & Services > OAuth consent screen* set it up as
+   *External* (app name, support e-mail; the `openid` and `profile` scopes need no
+   review) and publish it.
+2. Under *Credentials*, create an *OAuth client ID* of type *Web application*, with
+   the authorized redirect URI `https://<your domain>/api/account/google/callback`
+   (add `http://localhost:3000/api/account/google/callback` for development).
+3. Set `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` (on Vercel: Project Settings >
+   Environment Variables, the secret as sensitive), then redeploy.
+
+Google only sends players back to the redirect URIs listed there: Vercel preview
+deployments, whose address changes, cannot use it unless you add their address.
 
 If you host the server yourself and it is reachable beyond your local network, serve it over HTTPS
 (passwords cross the network in clear on plain HTTP). Caddy needs no extra

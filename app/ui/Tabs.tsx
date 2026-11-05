@@ -16,7 +16,9 @@ type TabsProps = {
 
 /** Panels shown one at a time, so a page fits on a small screen without scrolling */
 const Tabs = ({ label, tabs, allOnWide = false, initial }: TabsProps) => {
-  const [active, setActive] = useState(initial ?? tabs[0]?.id);
+  const [active, setActive] = useState(() =>
+    tabs.some((t) => t.id === initial) ? initial : tabs[0]?.id
+  );
   const base = useId();
   const select = (id: string) => {
     if (id === active) return;

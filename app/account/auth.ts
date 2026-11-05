@@ -148,7 +148,7 @@ export const userIdOf = async (req: NextRequest) => {
 // Secure cookies are only sent over HTTPS: on plain HTTP (a phone on the local
 // network in development) the session would never come back.
 // MORPION_SECURE_COOKIES=1 forces them, behind a proxy that does not say it is HTTPS.
-const isHttps = (req: NextRequest) =>
+export const isHttps = (req: NextRequest) =>
   process.env.MORPION_SECURE_COOKIES === "1" ||
   req.nextUrl.protocol === "https:" ||
   req.headers.get("x-forwarded-proto")?.split(",")[0].trim() === "https";
@@ -200,6 +200,27 @@ export const clientIp = (req: NextRequest) => {
 };
 
 export const SIGNUP_SERVER_KEY = "signup:server";
+
+// Sign-ups per hour (with a password or with Google): per address (friends behind one
+// home connection share it) and for the whole server, which a made-up address cannot
+// get around
+const MAX_SIGNUPS_PER_ADDRESS = 20;
+const MAX_SIGNUPS_PER_SERVER = 30;
+const SIGNUP_WINDOW_MS = 60 * 60_000;
+
+const signupKeys = (req: NextRequest) => [`signup:${clientIp(req)}`, SIGNUP_SERVER_KEY];
+
+/** Too many accounts made lately, from this address or on the whole server */
+export const isSignupLimited = async (req: NextRequest) => {
+  const [address, server] = signupKeys(req);
+  const limited = await Promise.all([
+    isLimited(address, MAX_SIGNUPS_PER_ADDRESS, SIGNUP_WINDOW_MS),
+    isLimited(server, MAX_SIGNUPS_PER_SERVER, SIGNUP_WINDOW_MS),
+  ]);
+  return limited.includes(true);
+};
+
+export const countSignup = (req: NextRequest) => countAttempts(...signupKeys(req));
 
 /** Too many attempts under this key during the window (an hour at most: older
  * attempts are dropped) */

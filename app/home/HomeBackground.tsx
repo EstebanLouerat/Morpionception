@@ -6,6 +6,7 @@ import { useAppearance } from "../theme/appearance";
 import {
   applyMove,
   getBoardOutcome,
+  getWinningLine,
   isValidMove,
   newGameState,
   type GameState,
@@ -20,16 +21,6 @@ const CELL = (BOARD - 2 * INSET) / 3;
 const MOVE_MS = 1500;
 const REST_MS = 3600;
 const DISSOLVE_MS = 2200;
-const LINES = [
-  [0, 1, 2],
-  [3, 4, 5],
-  [6, 7, 8],
-  [0, 3, 6],
-  [1, 4, 7],
-  [2, 5, 8],
-  [0, 4, 8],
-  [2, 4, 6],
-];
 // Specks of light drifting up: [left %, size px, duration s, delay s]
 const SPECKS: [number, number, number, number][] = [
   [8, 4, 26, 0], [19, 3, 31, 9], [27, 5, 24, 4], [38, 3, 34, 15], [46, 4, 28, 21],
@@ -54,12 +45,6 @@ const randomMove = (game: GameState) => {
   for (let b = 0; b < 9; b++) for (let c = 0; c < 9; c++) if (isValidMove(game, b, c)) moves.push([b, c]);
   return moves.length ? moves[Math.floor(Math.random() * moves.length)] : null;
 };
-
-/** The three boards in a row of the winner, if the game was won */
-const winningLine = (game: GameState) =>
-  LINES.find(
-    ([a, b, c]) => game.winners[a] && game.winners[a] === game.winners[b] && game.winners[a] === game.winners[c]
-  ) ?? null;
 
 type GlyphProps = { side: Side; x: number; y: number; size: number; className: string; style?: CSSProperties };
 
@@ -128,17 +113,20 @@ const fresh = (): Play => ({ game: newGameState(), marks: [], ending: false });
 const HomeBackground = () => {
   const ids = useId().replace(/:/g, "");
   const { reduceMotion } = useAppearance();
-  const [systemReduced, setSystemReduced] = useState(false);
+  // Known from the first render (pages render in the browser only): no animated frame
+  // before the still picture
+  const [systemReduced, setSystemReduced] = useState(
+    () => matchMedia("(prefers-reduced-motion: reduce)").matches
+  );
   useEffect(() => {
     const query = matchMedia("(prefers-reduced-motion: reduce)");
     const update = () => setSystemReduced(query.matches);
-    update();
     query.addEventListener("change", update);
     return () => query.removeEventListener("change", update);
   }, []);
   const still = reduceMotion || systemReduced;
 
-  const [play, setPlay] = useState<Play>(fresh);
+  const [play, setPlay] = useState<Play>(() => (still ? stillPlay() : fresh()));
 
   useEffect(() => {
     if (still) {
@@ -186,8 +174,10 @@ const HomeBackground = () => {
   // The light rests where the last move landed (the middle before the first one)
   const light = last ? center(last.board, last.cell) : { x: 450, y: 450 };
   const lightSide: Side = last ? last.side : "X";
-  const line = winningLine(game);
-  const forced = game.activeBoard;
+  const line = getWinningLine(game.winners);
+  const over = !!getBoardOutcome(game);
+  // The board to play next, while the game goes on
+  const forced = over || ending ? null : game.activeBoard;
   const color = (side: Side) => (side === "X" ? styles.x : styles.o);
   const at = { transform: `translate(${light.x}px, ${light.y}px)` };
 
@@ -218,10 +208,10 @@ const HomeBackground = () => {
             </defs>
 
             {/* The floor's own light, under the grid */}
-            <circle className={`${styles.follow} ${styles.pool}`} r={240} fill={`url(#${ids}-floor${lightSide})`} style={at} />
+            <circle className={styles.follow} r={240} fill={`url(#${ids}-floor${lightSide})`} style={at} />
 
             {/* The board to play next */}
-            {forced !== null && !ending && (
+            {forced !== null && (
               <rect
                 key={`forced-${marks.length}`}
                 className={`${styles.forced} ${color(game.currentPlayer)}`}
@@ -261,7 +251,8 @@ const HomeBackground = () => {
             {/* The moves, the newest glowing, each with a ripple where it lands */}
             {marks.map((m, i) => {
               const { x, y } = center(m.board, m.cell);
-              const newest = i === marks.length - 1 && !ending;
+              // The still picture has no newest move to animate
+              const newest = i === marks.length - 1 && !ending && !still;
               return (
                 <g
                   key={`${m.board}-${m.cell}`}

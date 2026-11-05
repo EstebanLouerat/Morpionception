@@ -125,18 +125,12 @@
   stroke-opacity: 0.3;
   stroke-width: 3;
   stroke-dasharray: 14 10;
-  animation:
-    appear 0.8s ease-out backwards,
-    march 6s linear infinite;
+  /* Appears, then stays still: a running dash would repaint the whole floor */
+  animation: appear 0.8s ease-out backwards;
 }
 @keyframes appear {
   from {
     opacity: 0;
-  }
-}
-@keyframes march {
-  to {
-    stroke-dashoffset: -240;
   }
 }
 
@@ -284,15 +278,19 @@
   );
 }
 
-/* Animations reduced: a still picture */
+/* Animations reduced (here or in the system): a still picture */
 .still .glow,
 .still .camera,
 .still .orbit,
 .still .mark > *,
 .still .forced,
-.still .wonBoard {
+.still .wonBoard,
+.still .winLine,
+.still .ripple,
+.still .newest {
   animation: none;
 }
-.still .follow {
+.still .follow,
+.still .fadeable {
   transition: none;
 }

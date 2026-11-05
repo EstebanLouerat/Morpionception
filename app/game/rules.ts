@@ -71,6 +71,10 @@ export const isBoardFull = (board: Board) => board.every((row) => row.every(Bool
 /** Side that claimed three boards in a row */
 export const getGlobalWinner = (winners: Cell[]): Cell => lineWinner(winners);
 
+/** The three boards in a row of the winner (indexes), null while nobody has them */
+export const getWinningLine = (winners: Cell[]) =>
+  LINES.find(([a, b, c]) => winners[a] && winners[a] === winners[b] && winners[a] === winners[c]) ?? null;
+
 /** A board is closed once won or full (a full board without winner is a tie) */
 export const getClosedBoards = ({ superBoard, winners }: GameState) =>
   superBoard.map((board, i) => !!winners[i] || isBoardFull(board));

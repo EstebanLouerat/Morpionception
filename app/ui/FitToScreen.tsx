@@ -28,14 +28,23 @@ const FitToScreen = ({ children, className }: { children: ReactNode; className?:
 
     /** Height of the content laid out for this scale (its width grows as it shrinks) */
     const heightAt = (s: number, width: number) => {
+      // Measured without the margin of an earlier fit: with an automatic width, a
+      // negative margin would make the content wider, so shorter, than it really is
+      content.style.marginRight = "";
       content.style.width = s === 1 ? "" : `${width / s}px`;
       return content.offsetHeight;
     };
     const apply = (s: number, width: number) => {
       heightAt(s, width);
       content.style.transform = s === 1 ? "" : `scale(${s})`;
+      // Laid out wider, it still takes only the box's width: a container sized by its
+      // content (the end of game modal) does not grow with it
+      content.style.marginRight = s === 1 ? "" : `${width - width / s}px`;
+      const changed = s !== scale;
       content.dataset.scale = String(s);
       scale = s;
+      // Pages that measure their layout (the leaderboard) measure again
+      if (changed) content.dispatchEvent(new Event("fitscale", { bubbles: true }));
     };
     const fit = () => {
       box.scrollTop = 0;

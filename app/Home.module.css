@@ -12,53 +12,6 @@
   overflow: hidden;
 }
 
-.animatedBackground {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 200%;
-  height: 200%;
-  animation: moveBackground 40s linear infinite;
-  z-index: 0;
-  pointer-events: none;
-}
-
-.animatedBackground::before,
-.animatedBackground::after {
-  position: absolute;
-  font-size: 8rem;
-  font-weight: bold;
-  white-space: nowrap;
-  color: var(--text);
-  opacity: 0.04;
-  left: 0;
-}
-
-.animatedBackground::before {
-  content: "X O X O X O X O X O X O X O X O ";
-  top: 20%;
-  animation: scrollXO 60s linear infinite;
-}
-
-.animatedBackground::after {
-  content: "O X O X O X O X O X O X O X O X ";
-  top: 60%;
-  animation: scrollXOReverse 80s linear infinite;
-}
-
-@keyframes scrollXO {
-  0% { transform: translateX(0%); }
-  100% { transform: translateX(-100%); }
-}
-@keyframes scrollXOReverse {
-  0% { transform: translateX(0%); }
-  100% { transform: translateX(100%); }
-}
-@keyframes moveBackground {
-  0% { transform: translate(0, 0); }
-  100% { transform: translate(-25%, -25%); }
-}
-
 .topBar {
   position: absolute;
   top: 1rem;

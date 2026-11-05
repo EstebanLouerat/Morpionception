@@ -1,0 +1,166 @@
+/* Behind the home page, never in the way: no pointer events, faint, slow */
+.scene {
+  --line: var(--text);
+  --glow: 0.2;
+  --grid: 1;
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+:global(:root[data-theme="dark"]) .scene {
+  --glow: 0.28;
+}
+
+/* --- Soft glows in the players' colors, drifting --- */
+.glow {
+  position: absolute;
+  width: 75vmax;
+  height: 75vmax;
+  border-radius: 50%;
+  opacity: var(--glow);
+  will-change: transform;
+}
+.glowX {
+  top: -32vmax;
+  left: -26vmax;
+  background: radial-gradient(circle closest-side, var(--primary-x), transparent);
+  animation: driftX 38s ease-in-out infinite alternate;
+}
+.glowO {
+  right: -28vmax;
+  bottom: -36vmax;
+  background: radial-gradient(circle closest-side, var(--primary-o), transparent);
+  animation: driftO 46s ease-in-out infinite alternate;
+}
+@keyframes driftX {
+  to {
+    transform: translate(14vmax, 10vmax) scale(1.12);
+  }
+}
+@keyframes driftO {
+  to {
+    transform: translate(-12vmax, -14vmax) scale(1.08);
+  }
+}
+
+/* --- The game's grid, lying like a floor, swaying slowly --- */
+.floor {
+  position: absolute;
+  top: 62%;
+  left: 50%;
+  /* Wide enough to fill a desktop, small enough that a phone sees several boards */
+  width: clamp(760px, 125vw, 1700px);
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%) perspective(1500px) rotateX(58deg) rotateZ(-8deg);
+  animation: sway 52s ease-in-out infinite alternate;
+  /* Fades out toward the edges, and lighter right in the middle (behind the menu) */
+  mask-image: radial-gradient(closest-side, rgba(0, 0, 0, 0.55) 0%, #000 38%, #000 52%, transparent 100%);
+  -webkit-mask-image: radial-gradient(closest-side, rgba(0, 0, 0, 0.55) 0%, #000 38%, #000 52%, transparent 100%);
+  will-change: transform;
+}
+@keyframes sway {
+  to {
+    transform: translate(-50%, -50%) perspective(1500px) rotateX(58deg) rotateZ(8deg);
+  }
+}
+.grid {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.thin line,
+.thick line {
+  stroke: var(--line);
+  stroke-linecap: round;
+}
+.thin line {
+  stroke-width: 2.5;
+  opacity: 0.1;
+}
+.thick line {
+  stroke-width: 5;
+  opacity: 0.2;
+}
+
+/* The board to play next */
+.forced {
+  fill: currentColor;
+  fill-opacity: 0.07;
+  stroke: currentColor;
+  stroke-opacity: 0.35;
+  stroke-width: 3;
+  animation: appear 0.8s ease-out backwards;
+}
+@keyframes appear {
+  from {
+    opacity: 0;
+  }
+}
+
+/* --- Ghost moves, drawn stroke by stroke --- */
+.marks {
+  transition: opacity 1.2s ease;
+}
+.fading {
+  opacity: 0;
+}
+.mark > * {
+  fill: none;
+  stroke-width: 8;
+  stroke-linecap: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+  animation: draw 0.55s cubic-bezier(0.65, 0, 0.35, 1) backwards;
+}
+.mark {
+  opacity: 0.55;
+}
+.won {
+  opacity: 0.22;
+}
+.won > * {
+  stroke-width: 14;
+  animation-duration: 1.1s;
+}
+@keyframes draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+}
+.x {
+  color: var(--primary-x);
+  stroke: var(--primary-x);
+}
+.o {
+  color: var(--primary-o);
+  stroke: var(--primary-o);
+}
+
+/* A soft veil in the page color behind the title and the buttons: the game goes on
+   around them, never under the text */
+.veil {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: max(620px, 75vw);
+  height: max(460px, 62vh);
+  transform: translate(-50%, -52%);
+  background: radial-gradient(
+    closest-side,
+    var(--bg) 0%,
+    color-mix(in srgb, var(--bg) 82%, transparent) 45%,
+    transparent 100%
+  );
+}
+
+/* Animations reduced: a still picture */
+.still .glow,
+.still .floor,
+.still .mark > *,
+.still .forced {
+  animation: none;
+}

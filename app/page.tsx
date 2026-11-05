@@ -3,11 +3,12 @@
 import styles from "./Home.module.css";
 import { ButtonLink, IconLink } from "./ui/Button";
 import AccountLink from "./account/AccountLink";
+import HomeBackground from "./home/HomeBackground";
 
 export default function Home() {
   return (
     <main className={styles.container}>
-      <div className={styles.animatedBackground} aria-hidden="true" />
+      <HomeBackground />
 
       <header className={styles.topBar}>
         <AccountLink />

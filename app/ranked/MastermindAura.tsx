@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import styles from "./RankEmblem.module.css";
-import { motionReduced } from "../theme/appearance";
+import { useAppearance } from "../theme/appearance";
 
 // The aura spreads this far around the emblem (times its size)
 export const AURA_SCALE = 1.9;
@@ -16,7 +16,12 @@ void main() { gl_Position = vec4(p, 0.0, 1.0); }
 // rose) turning slowly, rays sweeping round, sparkles twinkling, all fading out from
 // the middle. Premultiplied alpha, so it blends over any page color.
 const FRAGMENT = `
+// The noise and the time need full precision (mediump bands on phone GPUs)
+#ifdef GL_FRAGMENT_PRECISION_HIGH
+precision highp float;
+#else
 precision mediump float;
+#endif
 uniform float t;
 uniform vec2 res;
 
@@ -82,6 +87,18 @@ const MastermindAura = ({ size }: { size: number }) => {
   const canvas = useRef<HTMLCanvasElement>(null);
   const [fallback, setFallback] = useState(false);
   const box = Math.round(size * AURA_SCALE);
+  // The setting here or the system's: followed while the aura is shown
+  const { reduceMotion } = useAppearance();
+  const [systemReduced, setSystemReduced] = useState(
+    () => matchMedia("(prefers-reduced-motion: reduce)").matches
+  );
+  useEffect(() => {
+    const query = matchMedia("(prefers-reduced-motion: reduce)");
+    const update = () => setSystemReduced(query.matches);
+    query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
+  }, []);
+  const still = reduceMotion || systemReduced;
 
   useEffect(() => {
     const el = canvas.current!;
@@ -127,9 +144,10 @@ const MastermindAura = ({ size }: { size: number }) => {
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
     };
 
-    if (motionReduced()) {
+    const release = () => gl.getExtension("WEBGL_lose_context")?.loseContext();
+    if (still) {
       draw(0);
-      return;
+      return release;
     }
     let frame = 0;
     let visible = true;
@@ -152,14 +170,15 @@ const MastermindAura = ({ size }: { size: number }) => {
       cancelAnimationFrame(frame);
       seen.disconnect();
       document.removeEventListener("visibilitychange", update);
-      gl.getExtension("WEBGL_lose_context")?.loseContext();
+      release();
     };
-  }, [box]);
+  }, [box, still]);
 
   return fallback ? (
     <span className={styles.auraFallback} style={{ width: box, height: box }} aria-hidden="true" />
   ) : (
-    <canvas ref={canvas} className={styles.aura} style={{ width: box, height: box }} aria-hidden="true" />
+    // A new canvas when the motion setting changes: the old one's context was released
+    <canvas key={String(still)} ref={canvas} className={styles.aura} style={{ width: box, height: box }} aria-hidden="true" />
   );
 };
 

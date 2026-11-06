@@ -1,6 +1,10 @@
 import { useId } from "react";
 import styles from "./RankEmblem.module.css";
+import MastermindAura from "./MastermindAura";
 import type { Rank } from "./rating";
+
+// From this size, the best rank gets its shader aura (smaller ones keep a CSS glow)
+const AURA_MIN_SIZE = 48;
 
 type RankEmblemProps = {
   /** The rank to draw; an unplaced rank is drawn as a mystery emblem */
@@ -9,6 +13,8 @@ type RankEmblemProps = {
   className?: string;
   /** Label for screen readers; without it the emblem is decorative */
   title?: string;
+  /** The living aura of the best rank (default: when the emblem is big enough) */
+  aura?: boolean;
 };
 
 // The shield every emblem is built on, in a 100 × 100 box
@@ -17,7 +23,7 @@ const INNER = "M50 14 L78 24.5 V50 C78 68 66 80 50 86 C34 80 22 68 22 50 V24.5 Z
 
 /** Emblem of a tier: a shield in the tier colors with the morpion grid, decorated more
  * and more richly up the ladder, and one pip per division */
-const RankEmblem = ({ rank, size = 64, className, title }: RankEmblemProps) => {
+const RankEmblem = ({ rank, size = 64, className, title, aura }: RankEmblemProps) => {
   const id = useId().replace(/:/g, "");
   const { tier } = rank;
   const placed = rank.placed;
@@ -25,8 +31,9 @@ const RankEmblem = ({ rank, size = 64, className, title }: RankEmblemProps) => {
   const dark = placed ? tier.dark : "#4a525c";
   const level = placed ? tier.id : "placement";
   const top = ["platine", "diamant", "maitre", "mastermind"].includes(level);
+  const withAura = level === "mastermind" && (aura ?? size >= AURA_MIN_SIZE);
 
-  return (
+  const svg = (
     <svg
       viewBox="0 0 100 100"
       width={size}
@@ -138,6 +145,14 @@ const RankEmblem = ({ rank, size = 64, className, title }: RankEmblemProps) => {
         </g>
       )}
     </svg>
+  );
+  return withAura ? (
+    <span className={`${styles.auraWrap} ${className ?? ""}`} style={{ width: size, height: size }}>
+      <MastermindAura size={size} />
+      {svg}
+    </span>
+  ) : (
+    svg
   );
 };
 

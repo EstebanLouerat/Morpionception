@@ -1,0 +1,187 @@
+.ladder {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.intro {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+/* --- Every rank, best first --- */
+.tiers {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  list-style: none;
+}
+.tier {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.3rem 0.6rem;
+  border-radius: 12px;
+}
+.tierText {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+.tierText small {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+.tierName {
+  color: var(--tier-dark);
+}
+:global(:root[data-theme="dark"]) .tierName {
+  color: var(--tier);
+}
+.mine {
+  background: color-mix(in srgb, var(--tier) 18%, transparent);
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--tier) 60%, transparent);
+}
+.you {
+  flex-shrink: 0;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  background: var(--tier-dark);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+/* The best rank: a living frame and a shining name (its emblem has the shader aura) */
+.best {
+  position: relative;
+  margin: 0.35rem 0 0.25rem;
+  padding: 0.55rem 0.75rem;
+  border-radius: 16px;
+  background:
+    linear-gradient(var(--surface), var(--surface)) padding-box,
+    conic-gradient(from var(--angle, 0deg), #7b2ff7, #ff5a7a, #ffe066, #4fd6c4, #7b2ff7) border-box;
+  border: 2px solid transparent;
+  box-shadow:
+    0 0 18px rgba(155, 90, 255, 0.35),
+    0 0 36px rgba(255, 210, 90, 0.18);
+  animation:
+    turnBorder 6s linear infinite,
+    breathe 3.2s ease-in-out infinite alternate;
+}
+@property --angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+@keyframes turnBorder {
+  to {
+    --angle: 360deg;
+  }
+}
+@keyframes breathe {
+  to {
+    box-shadow:
+      0 0 26px rgba(155, 90, 255, 0.55),
+      0 0 52px rgba(255, 210, 90, 0.3);
+  }
+}
+.bestName {
+  font-size: 1.1rem;
+  font-weight: 900;
+  /* Deep enough to read on a light page (the dark theme has its own, brighter) */
+  background: linear-gradient(90deg, #6a1fe0, #d6336c, #b07a00, #0f8f7e, #6a1fe0);
+  background-size: 250% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: shine 4s linear infinite;
+}
+:global(:root[data-theme="dark"]) .bestName {
+  background-image: linear-gradient(90deg, #b388ff, #ff8fab, #ffe066, #7ff0dd, #b388ff);
+}
+@keyframes shine {
+  to {
+    background-position: 250% 0;
+  }
+}
+
+/* --- The divisions --- */
+.divisions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.75rem 0.85rem;
+  border-radius: 14px;
+  background: var(--surface-muted);
+}
+.divisions h3 {
+  font-size: 0.95rem;
+}
+.divisions p {
+  font-size: 0.85rem;
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+.divisions b {
+  color: var(--text);
+}
+.steps {
+  display: grid;
+  grid-template-columns: repeat(var(--steps, 3), 1fr) auto;
+  gap: 3px;
+}
+.step,
+.nextStep {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.35rem 0.4rem;
+  font-size: 0.75rem;
+  text-align: center;
+}
+.step {
+  background: color-mix(in srgb, var(--tier) 30%, var(--surface));
+}
+.step:first-child {
+  border-radius: 10px 0 0 10px;
+}
+.step:nth-last-child(2) {
+  border-radius: 0 10px 10px 0;
+}
+.step b,
+.nextStep b {
+  white-space: nowrap;
+}
+.step small,
+.nextStep small {
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+.here {
+  background: var(--tier);
+  box-shadow: 0 0 0 2px var(--tier-dark);
+}
+.here b,
+.here small {
+  color: #1e1e24;
+}
+.nextStep {
+  color: var(--text-muted);
+}
+.nextStep::before {
+  content: "→";
+  font-weight: 800;
+}
+.note {
+  font-size: 0.8rem !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .best,
+  .bestName {
+    animation: none;
+  }
+}

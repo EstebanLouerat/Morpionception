@@ -9,6 +9,8 @@ import ui from "../../ui/common.module.css";
 import PageShell from "../../ui/PageShell";
 import Loader from "../../ui/Loader";
 import Dialog from "../../ui/Dialog";
+import Tabs from "../../ui/Tabs";
+import RankLadder, { Divisions } from "../../ranked/RankLadder";
 import { Button, ButtonLink, IconButton, IconLink } from "../../ui/Button";
 import { refreshAccount, useAccount } from "../../account/client";
 import type { AccountView } from "../../account/protocol";
@@ -19,7 +21,7 @@ import { gameHref, useRankedSearch } from "../../ranked/RankedSearch";
 import { formatWait } from "../../ranked/client";
 import { MATCHMAKING, PLACEMENT_GAMES, RATING } from "../../ranked/config";
 import type { RankedRating } from "../../ranked/protocol";
-import { rankOf } from "../../ranked/rating";
+import { rankOf, type Rank } from "../../ranked/rating";
 
 /** Ranked page: your rank, the search for an opponent, the rules */
 export default function Classe() {
@@ -35,12 +37,20 @@ export default function Classe() {
       backHref="/jouer"
       actions={
         <>
-          <IconButton icon="help" label="Règles" onClick={() => setRules(true)} />
+          <IconButton icon="help" label="Rangs et règles" onClick={() => setRules(true)} />
           <IconLink href="/classement" icon="trophy" label="Top 50" />
         </>
       }
     >
-      <Rules open={rules} onClose={() => setRules(false)} />
+      <RankedHelp
+        open={rules}
+        onClose={() => setRules(false)}
+        current={
+          account.status === "user" && account.account.ranked
+            ? rankOf(account.account.ranked.rating, account.account.ranked.games)
+            : null
+        }
+      />
       {account.status === "loading" && <Loader label="Chargement du compte…" />}
       {account.status === "error" && (
         <div className={ui.card}>
@@ -169,24 +179,37 @@ const Ranked = ({ account }: { account: AccountView }) => {
   );
 };
 
-/** The rules of ranked play, in a window opened from the top bar */
-const Rules = ({ open, onClose }: { open: boolean; onClose: () => void }) => (
-  <Dialog open={open} title="Règles du classé" onClose={onClose}>
-    <ul className={styles.rules}>
-      <li>
-        Adversaire de niveau proche, camp tiré au sort, chrono de {MATCHMAKING.clockSeconds / 60} minutes
-        par joueur qui démarre tout de suite.
-      </li>
-      <li>
-        Les {PLACEMENT_GAMES} premières parties placent ton rang&nbsp;: elles rapportent ou coûtent
-        beaucoup de points. Ensuite les écarts se resserrent.
-      </li>
-      <li>Abandonner ou quitter une partie compte comme une défaite.</li>
-      <li>
-        Un adversaire absent au début peut être laissé après {MATCHMAKING.noShowSeconds} secondes&nbsp;: la
-        partie est annulée, sans points perdus.
-      </li>
-      <li>Les 3 meilleurs joueurs du classement portent une couronne d&apos;or, d&apos;argent ou de bronze.</li>
-    </ul>
+/** The ranks and the rules of ranked play, in a window opened from the top bar */
+const RankedHelp = ({ open, onClose, current }: { open: boolean; onClose: () => void; current: Rank | null }) => (
+  <Dialog open={open} title="Le classé" onClose={onClose}>
+    <Tabs
+      label="Aide du classé"
+      tabs={[
+        { id: "ranks", label: "Rangs", content: <RankLadder current={current} /> },
+        { id: "divisions", label: "Divisions", content: <Divisions current={current} /> },
+        {
+          id: "rules",
+          label: "Règles",
+          content: (
+            <ul className={styles.rules}>
+              <li>
+                Adversaire de niveau proche, camp tiré au sort, chrono de {MATCHMAKING.clockSeconds / 60} minutes
+                par joueur qui démarre tout de suite.
+              </li>
+              <li>
+                Les {PLACEMENT_GAMES} premières parties placent ton rang&nbsp;: elles rapportent ou coûtent
+                beaucoup de points. Ensuite les écarts se resserrent.
+              </li>
+              <li>Abandonner ou quitter une partie compte comme une défaite.</li>
+              <li>
+                Un adversaire absent au début peut être laissé après {MATCHMAKING.noShowSeconds} secondes&nbsp;: la
+                partie est annulée, sans points perdus.
+              </li>
+              <li>Les 3 meilleurs joueurs du classement portent une couronne d&apos;or, d&apos;argent ou de bronze.</li>
+            </ul>
+          ),
+        },
+      ]}
+    />
   </Dialog>
 );

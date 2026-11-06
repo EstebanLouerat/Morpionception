@@ -7,6 +7,8 @@ import {
   getClosedBoards,
   getForcedBoard,
   isValidMove,
+  LINES,
+  otherSide,
   type GameState,
   type Move,
   type Side,
@@ -95,6 +97,51 @@ export const forcesWin = (state: GameState, move: Move) => {
   });
 };
 
+// --- Lines: small boards and the big one ---
+
+/** The empty cells where the side would complete a line of the small board now */
+export const threats = (state: GameState, side: Side, board: number): number[] => {
+  if (getClosedBoards(state)[board]) return [];
+  const cells = state.superBoard[board].flat();
+  const found = LINES.flatMap((line) => {
+    const empty = line.filter((c) => !cells[c]);
+    return empty.length === 1 && line.filter((c) => cells[c] === side).length === 2 ? empty : [];
+  });
+  return [...new Set(found)];
+};
+
+/** A line of the open small board without a mark of the other side (null: none left) */
+export const openLine = (state: GameState, side: Side, board: number): number[] | null => {
+  if (getClosedBoards(state)[board]) return null;
+  const cells = state.superBoard[board].flat();
+  return LINES.find((line) => line.every((c) => cells[c] !== otherSide(side))) ?? null;
+};
+
+/** The side holds this small board or can still win it */
+export const canWin = (state: GameState, side: Side, board: number) =>
+  state.winners[board] === side || !!openLine(state, side, board);
+
+/** An open small board that nobody can win any more: it will count for no one */
+export const isDead = (state: GameState, board: number) =>
+  !getClosedBoards(state)[board] && !openLine(state, "X", board) && !openLine(state, "O", board);
+
+/** The lines of the big board through this board that the side can still complete */
+export const liveLines = (state: GameState, side: Side, board: number) =>
+  LINES.filter((line) => line.includes(board) && line.every((b) => canWin(state, side, b)));
+
+/** The open boards that keep the most lines of the big board for the side */
+export const mostLiveBoards = (state: GameState, side: Side) => {
+  const open = [0, 1, 2, 3, 4, 5, 6, 7, 8].filter((b) => !state.winners[b]);
+  const most = Math.max(...open.map((b) => liveLines(state, side, b).length));
+  return open.filter((b) => liveLines(state, side, b).length === most);
+};
+
+/** The lines of the big board where the side holds two boards and can still win the third */
+export const bigThreats = (state: GameState, side: Side) =>
+  LINES.filter(
+    (line) => line.filter((b) => state.winners[b] === side).length === 2 && line.every((b) => canWin(state, side, b))
+  );
+
 // --- Words for the lessons ---
 
 const BOARD_NAMES = [
@@ -113,3 +160,21 @@ const BOARD_NAMES = [
 export const boardName = (board: number) => `la grille ${BOARD_NAMES[board]}`;
 /** "la case en haut à droite" */
 export const cellName = (cell: number) => `la case ${BOARD_NAMES[cell]}`;
+
+// In the order of LINES
+const LINE_NAMES = [
+  "la ligne du haut",
+  "la ligne du milieu",
+  "la ligne du bas",
+  "la colonne de gauche",
+  "la colonne du milieu",
+  "la colonne de droite",
+  "la diagonale qui part d'en haut à gauche",
+  "la diagonale qui part d'en haut à droite",
+];
+
+/** "la colonne de gauche" (one of LINES) */
+export const lineName = (line: number[]) => LINE_NAMES[LINES.indexOf(line)];
+
+export const capital = (text: string) => text[0].toUpperCase() + text.slice(1);
+export const lower = (text: string) => text[0].toLowerCase() + text.slice(1);

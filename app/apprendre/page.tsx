@@ -28,7 +28,7 @@ export default function Apprendre() {
       href: "/apprendre/strategie",
       icon: "book" as const,
       title: "Le livre de stratégie",
-      text: `${LESSONS.length} leçons, du débutant à l'avancé : démos, énigmes, partie commentée. ${
+      text: `${LESSONS.length} leçons, du débutant à l'expert : démos, énigmes, partie commentée. ${
         read ? `${read}/${LESSONS.length} lues · ${solved}/${exercises.length} exercices réussis.` : ""
       }`,
     },

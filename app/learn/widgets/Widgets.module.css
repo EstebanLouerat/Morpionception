@@ -204,3 +204,30 @@
     padding: 0.45rem 0.7rem;
   }
 }
+
+/* --- Live lines: the boards won, and the lines still open (green) or dead (red) --- */
+.lineLayer .liveLine {
+  stroke: #16a085;
+}
+/* Faded in to 0.7 by the widget */
+.lineLayer .deadLine {
+  stroke: #e5484d;
+  stroke-dasharray: 10 16;
+}
+.wonX {
+  background: color-mix(in srgb, var(--primary-x) 12%, var(--surface-muted));
+}
+.wonO {
+  background: color-mix(in srgb, var(--primary-o) 12%, var(--surface-muted));
+}
+.bigMark {
+  font-size: clamp(1.8rem, 8dvh, 4rem);
+  font-weight: 900;
+  line-height: 1;
+}
+.markX {
+  color: var(--primary-x);
+}
+.markO {
+  color: var(--primary-o);
+}

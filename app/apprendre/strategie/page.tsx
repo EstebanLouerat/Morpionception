@@ -13,6 +13,8 @@ import { markRead, useLearnProgress } from "../../learn/progress";
 import SendDemo from "../../learn/widgets/SendDemo";
 import LinesDemo from "../../learn/widgets/LinesDemo";
 import PuzzleView from "../../learn/widgets/PuzzleView";
+import LiveLines from "../../learn/widgets/LiveLines";
+import DeadBoards from "../../learn/widgets/DeadBoards";
 import ReplayView from "../../learn/widgets/ReplayView";
 import Checklist from "../../learn/widgets/Checklist";
 
@@ -22,9 +24,13 @@ const Widget = ({ lesson }: { lesson: Lesson }) => {
     case "send":
       return <SendDemo />;
     case "lines":
-      return <LinesDemo scale={w.scale} />;
+      return <LinesDemo />;
     case "puzzle":
       return <PuzzleView id={lesson.id} puzzle={w.puzzle} />;
+    case "live":
+      return <LiveLines id={lesson.id} state={w.state} prompt={w.prompt} />;
+    case "dead":
+      return <DeadBoards id={lesson.id} state={w.state} prompt={w.prompt} />;
     case "replay":
       return <ReplayView start={w.start} moves={w.moves} captions={w.captions} />;
     case "checklist":
@@ -32,7 +38,7 @@ const Widget = ({ lesson }: { lesson: Lesson }) => {
   }
 };
 
-/** The strategy book: one lesson at a time (?lecon=…), simple to advanced, each with
+/** The strategy book: one lesson at a time (?lecon=…), beginner to expert, each with
  * something to try: a demo, a puzzle, a commented game */
 export default function Strategie() {
   const router = useRouter();
@@ -100,40 +106,50 @@ type ContentsProps = {
 
 /** Every lesson by level, with what was read or solved */
 const Contents = ({ open, onClose, current, onPick, progress }: ContentsProps) => (
-  <Dialog open={open} title="Sommaire" onClose={onClose}>
-    {(Object.keys(LEVELS) as Level[]).map((level) => (
-      <section key={level} className={book.level}>
-        <h3>{LEVELS[level]}</h3>
-        <ol>
-          {LESSONS.filter((l) => l.level === level).map((lesson) => {
-            const solved = progress.solved.includes(lesson.id);
-            const read = progress.read.includes(lesson.id);
-            return (
-              <li key={lesson.id}>
-                <button
-                  type="button"
-                  className={`${book.entry} ${lesson.id === current.id ? book.current : ""}`}
-                  onClick={() => {
-                    onPick(lesson);
-                    onClose();
-                  }}
-                >
-                  <span className={`${book.state} ${solved ? book.solved : read ? book.read : ""}`} aria-hidden="true">
-                    {solved || read ? <Icon name="check" size={14} /> : null}
-                  </span>
-                  <span className={book.entryTitle}>{lesson.title}</span>
-                  <small>{kindLabel(lesson)}</small>
-                </button>
-              </li>
-            );
-          })}
-        </ol>
-      </section>
-    ))}
+  <Dialog open={open} title="Sommaire" onClose={onClose} wide>
+    <div className={book.levels}>
+      {(Object.keys(LEVELS) as Level[]).map((level) => (
+        <section key={level} className={book.level}>
+          <h3>{LEVELS[level]}</h3>
+          <ol>
+            {LESSONS.filter((l) => l.level === level).map((lesson) => {
+              const solved = progress.solved.includes(lesson.id);
+              const read = progress.read.includes(lesson.id);
+              return (
+                <li key={lesson.id}>
+                  <button
+                    type="button"
+                    className={`${book.entry} ${lesson.id === current.id ? book.current : ""}`}
+                    onClick={() => {
+                      onPick(lesson);
+                      onClose();
+                    }}
+                  >
+                    <span className={`${book.state} ${solved ? book.solved : read ? book.read : ""}`} aria-hidden="true">
+                      {solved || read ? <Icon name="check" size={14} /> : null}
+                    </span>
+                    <span className={book.entryTitle}>{lesson.title}</span>
+                    <small>{kindLabel(lesson)}</small>
+                  </button>
+                </li>
+              );
+            })}
+          </ol>
+        </section>
+      ))}
+    </div>
   </Dialog>
 );
 
 const kindLabel = (lesson: Lesson) =>
-  ({ send: "démo", lines: "démo", puzzle: "énigme", replay: "partie commentée", checklist: "méthode" })[
+  ({
+    send: "démo",
+    lines: "démo",
+    puzzle: "énigme",
+    live: "observation",
+    dead: "observation",
+    replay: "partie commentée",
+    checklist: "méthode",
+  })[
     lesson.widget.kind
   ];

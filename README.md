@@ -57,9 +57,11 @@ Ultimate tic-tac-toe ("morpion" in French) built with Next.js, React and Framer 
   next to their symbol in every online game.
 - Learning (`/apprendre`, opened only from the home page or the Jouer menu, never
   by itself): an interactive tutorial that teaches the rules by playing on a live
-  board, and a strategy book of 9 lessons from beginner to advanced, with demos,
-  puzzles (a wrong move is answered by the reply that punishes it), a commented
-  game and a checklist. Progress is kept on the device.
+  board, and a strategy book of 14 lessons on four levels (beginner to expert:
+  sends, free choice, live lines, double threats, the lesser evil, forced sends,
+  dead boards, forks), with demos, puzzles (a wrong move is answered by the reply
+  that punishes it), board searches, a commented game and a checklist. Progress is
+  kept on the device.
 - Light / dark theme and three player color palettes.
 - Accessibility (Paramètres > Accessibilité): bigger cells (Normale, Grande, or
   Maximale: the grid takes the whole screen), big X and O, high contrast (visible
@@ -336,4 +338,4 @@ MONGODB_URI="mongodb+srv://…"
 | `npm run ai:arena -- <a> <b> [games]`  | Games between two AIs (levels, `it:<n>`, `ms:<n>`, `random`) |
 | `npm run ai:check-openspiel -- <file>` | Replay OpenSpiel games through the game's rules              |
 | `npm run ranked:simulate`              | Points per game and ladder spread for the ranked settings    |
-| `npm run learn:check`                  | Checks every puzzle of the strategy book against the rules   |
+| `npm run learn:check`                  | Checks every exercise of the strategy book against the rules |

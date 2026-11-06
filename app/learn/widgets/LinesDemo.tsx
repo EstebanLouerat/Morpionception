@@ -7,15 +7,14 @@ import { LINES } from "../../game/rules";
 
 const NAMES = ["Le coin", "Le bord", "Le coin", "Le bord", "Le centre", "Le bord", "Le coin", "Le bord", "Le coin"];
 
-/** Tap a cell (or a board of the big grid): the lines it belongs to are drawn */
-const LinesDemo = ({ scale }: { scale: "cases" | "grilles" }) => {
+/** Tap a cell: the lines it belongs to are drawn */
+const LinesDemo = () => {
   const [pick, setPick] = useState(4);
   const lines = LINES.filter((line) => line.includes(pick));
   const at = (i: number) => ({ x: 50 + (i % 3) * 100, y: 50 + Math.floor(i / 3) * 100 });
-  const what = scale === "cases" ? "case" : "grille";
   return (
     <div className={styles.widget}>
-      <div className={`${styles.lines} ${scale === "grilles" ? styles.linesBig : ""}`}>
+      <div className={styles.lines}>
         {Array.from({ length: 9 }, (_, i) => (
           <button
             key={i}
@@ -25,13 +24,6 @@ const LinesDemo = ({ scale }: { scale: "cases" | "grilles" }) => {
             aria-pressed={i === pick}
             aria-label={`${NAMES[i]} : ${LINES.filter((l) => l.includes(i)).length} lignes`}
           >
-            {scale === "grilles" && (
-              <span className={styles.boardIcon} aria-hidden="true">
-                {Array.from({ length: 9 }, (_, k) => (
-                  <i key={k} />
-                ))}
-              </span>
-            )}
             <span className={styles.lineCount}>{LINES.filter((l) => l.includes(i)).length}</span>
           </button>
         ))}
@@ -55,8 +47,8 @@ const LinesDemo = ({ scale }: { scale: "cases" | "grilles" }) => {
         </svg>
       </div>
       <p className={styles.caption} role="status" aria-live="polite">
-        {NAMES[pick]} : {scale === "cases" ? "cette case" : "cette grille"} sert à <b>{lines.length} lignes</b>
-        {lines.length === 4 ? `, plus que toute autre ${what}.` : lines.length === 2 ? `, le moins possible.` : "."}
+        {NAMES[pick]} : cette case sert à <b>{lines.length} lignes</b>
+        {lines.length === 4 ? ", plus que toute autre case." : lines.length === 2 ? ", le moins possible." : "."}
       </p>
     </div>
   );

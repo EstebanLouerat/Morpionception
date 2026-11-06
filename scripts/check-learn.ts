@@ -2,9 +2,10 @@
 //   npm run learn:check
 // Every puzzle must have at least one right answer and one wrong one; a wrong answer
 // that comes with a punishing reply must be a legal reply; a two-move puzzle must be
-// finishable after the right answer, whatever the opponent replies.
+// finishable after the right answer, whatever the opponent replies (and when the goal is
+// the game, he has a single reply). A search has an answer and something else to tap.
 import { LESSONS } from "../app/learn/book";
-import { legalMoves, play, winsGame } from "../app/learn/positions";
+import { isDead, legalMoves, liveLines, mostLiveBoards, play, winsBoard, winsGame } from "../app/learn/positions";
 
 let failures = 0;
 const fail = (message: string) => {
@@ -24,8 +25,30 @@ for (const lesson of LESSONS) {
     console.log(`${lesson.id}: replay of ${widget.moves.length} legal moves`);
     continue;
   }
+  if (widget.kind === "live") {
+    const { state } = widget;
+    const open = [0, 1, 2, 3, 4, 5, 6, 7, 8].filter((b) => !state.winners[b]);
+    const count = (b: number) => liveLines(state, state.currentPlayer, b).length;
+    const best = mostLiveBoards(state, state.currentPlayer);
+    console.log(`${lesson.id}: live lines ${open.map((b) => `${b}:${count(b)}`).join(" ")}`);
+    if (best.length !== 1) fail(`${lesson.id}: ${best.length} boards keep the most lines, one expected`);
+    // The widget starts on the center: finding the answer must take a tap
+    if (best.includes(4)) fail(`${lesson.id}: the center is the answer`);
+    continue;
+  }
+  if (widget.kind === "dead") {
+    const { state } = widget;
+    const boards = [0, 1, 2, 3, 4, 5, 6, 7, 8];
+    const dead = boards.filter((b) => isDead(state, b));
+    console.log(`${lesson.id}: dead boards ${dead.join(" ")}`);
+    if (!dead.length) fail(`${lesson.id}: no dead board`);
+    if (dead.length === boards.length) fail(`${lesson.id}: every board is dead`);
+    continue;
+  }
   if (widget.kind !== "puzzle") continue;
   const { state, judge, finish } = widget.puzzle;
+  // The texts speak to X about O
+  if (state.currentPlayer !== "X") fail(`${lesson.id}: the puzzle is not X to move`);
   const moves = legalMoves(state);
   const verdicts = moves.map((move) => ({ move, verdict: judge(state, move) }));
   const right = verdicts.filter((v) => v.verdict.ok);
@@ -45,12 +68,15 @@ for (const lesson of LESSONS) {
   if (finish)
     for (const { move } of right) {
       const after = play(state, move);
-      if (legalMoves(after).length !== 1)
+      const replies = legalMoves(after);
+      if (!replies.length) fail(`${lesson.id}: after ${move.board}/${move.cell}, the opponent has no reply`);
+      if (finish.goal === "game" && replies.length !== 1)
         fail(`${lesson.id}: after ${move.board}/${move.cell}, the opponent should have exactly one reply`);
-      for (const reply of legalMoves(after)) {
+      for (const reply of replies) {
         const next = play(after, reply);
-        if (!legalMoves(next).some((m) => winsGame(next, m)))
-          fail(`${lesson.id}: after ${move.board}/${move.cell} and ${reply.board}/${reply.cell}, no win`);
+        const reached = finish.goal === "game" ? winsGame : winsBoard;
+        if (!legalMoves(next).some((m) => reached(next, m)))
+          fail(`${lesson.id}: after ${move.board}/${move.cell} and ${reply.board}/${reply.cell}, the goal is out of reach`);
       }
     }
 }

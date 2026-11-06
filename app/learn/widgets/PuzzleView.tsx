@@ -1,21 +1,19 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import confetti from "canvas-confetti";
 import styles from "./Widgets.module.css";
 import MiniBoard, { type BoardMark, type CellMark } from "../MiniBoard";
 import { Button } from "../../ui/Button";
 import { playFx } from "../../audio/engine";
-import { motionReduced } from "../../theme/appearance";
 import type { Puzzle, Verdict } from "../book";
-import { invalidMoveText, legalMoves, play, winsGame } from "../positions";
-import { markSolved } from "../progress";
+import { invalidMoveText, legalMoves, play, winsBoard, winsGame } from "../positions";
+import { celebrate } from "./celebrate";
 import type { GameState, Move } from "../../game/rules";
 
 type Phase = "play" | "wrong" | "finish" | "won";
 
 /** A position to solve: a wrong move is answered by the reply that punishes it, a right
- * one is celebrated (or, in two moves, followed by the forced reply and the finish) */
+ * one is celebrated (or, in two moves, followed by the opponent's reply and the finish) */
 const PuzzleView = ({ id, puzzle }: { id: string; puzzle: Puzzle }) => {
   const [state, setState] = useState<GameState>(puzzle.state);
   const [phase, setPhase] = useState<Phase>("play");
@@ -49,23 +47,19 @@ const PuzzleView = ({ id, puzzle }: { id: string; puzzle: Puzzle }) => {
     return () => clearTimeout(timer);
   }, [phase, verdict]);
 
-  // After the right first move of a two-move puzzle: the opponent's forced reply
+  // After the right first move of a two-move puzzle: the opponent's reply (any of them:
+  // the puzzle is checked to be won after each one)
   useEffect(() => {
     if (phase !== "finish" || state.currentPlayer === puzzle.state.currentPlayer) return;
     const timer = setTimeout(() => {
-      const reply = legalMoves(state)[0];
+      const replies = legalMoves(state);
+      const reply = replies[Math.floor(Math.random() * replies.length)];
       setState((s) => play(s, reply));
       playFx("placeO");
-      setMessage({ kind: "info", text: puzzle.finish!.reply });
+      setMessage({ kind: "info", text: puzzle.finish!.reply(reply) });
     }, 1000);
     return () => clearTimeout(timer);
   }, [phase, state, puzzle.state.currentPlayer, puzzle.finish]);
-
-  const solved = () => {
-    markSolved(id);
-    playFx("gameWin");
-    if (!motionReduced()) confetti({ particleCount: 90, spread: 70, origin: { y: 0.65 }, zIndex: 3000 });
-  };
 
   const tap = (move: Move) => {
     if (phase === "wrong" || phase === "won") return;
@@ -81,10 +75,10 @@ const PuzzleView = ({ id, puzzle }: { id: string; puzzle: Puzzle }) => {
     setState(next);
     playFx("placeX");
     if (phase === "finish") {
-      if (winsGame(state, move)) {
+      if (puzzle.finish!.goal === "game" ? winsGame(state, move) : winsBoard(state, move)) {
         setPhase("won");
         setMessage({ kind: "success", text: puzzle.finish!.won });
-        solved();
+        celebrate(id);
       } else {
         setPhase("wrong");
         setVerdict(null);
@@ -103,7 +97,7 @@ const PuzzleView = ({ id, puzzle }: { id: string; puzzle: Puzzle }) => {
     } else {
       setPhase("won");
       setBoards({ [move.cell]: "good" });
-      solved();
+      celebrate(id);
     }
   };
 

@@ -12,10 +12,12 @@ type DialogProps = {
   title: string;
   onClose: () => void;
   children: ReactNode;
+  /** Room for two columns where the screen has it */
+  wide?: boolean;
 };
 
 /** A small window above the page (Escape or a click outside closes it) */
-const Dialog = ({ open, title, onClose, children }: DialogProps) => {
+const Dialog = ({ open, title, onClose, children, wide = false }: DialogProps) => {
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -34,7 +36,7 @@ const Dialog = ({ open, title, onClose, children }: DialogProps) => {
           onClick={onClose}
         >
           <motion.div
-            className={styles.dialog}
+            className={`${styles.dialog} ${wide ? styles.wide : ""}`}
             role="dialog"
             aria-modal="true"
             aria-label={title}

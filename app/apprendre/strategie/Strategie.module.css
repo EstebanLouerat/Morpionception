@@ -1,4 +1,9 @@
-/* Table of contents */
+/* Table of contents: the levels side by side where the dialog is wide enough */
+.levels {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 19rem), 1fr));
+  gap: 0.9rem 1.4rem;
+}
 .level {
   display: flex;
   flex-direction: column;

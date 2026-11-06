@@ -2,10 +2,11 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import styles from "./MiniBoard.module.css";
-import { getBoardOutcome, getClosedBoards, getForcedBoard, type GameState, type Move } from "../game/rules";
+import { getBoardOutcome, getClosedBoards, getForcedBoard, type GameState, type Move, type Side } from "../game/rules";
 
 export type BoardMark = "send" | "danger" | "good" | "free";
-export type CellMark = { board: number; cell: number; kind: "hint" | "good" | "bad" | "ghost" };
+/** ghost: a faded mark on an empty cell, of `side` (the player to move by default) */
+export type CellMark = { board: number; cell: number; kind: "hint" | "good" | "bad" | "ghost"; side?: Side };
 
 type MiniBoardProps = {
   state: GameState;
@@ -52,7 +53,7 @@ const MiniBoard = ({ state, onTap, showForced = true, boards = {}, cells = [], l
               {board.flat().map((value, c) => {
                 const mark = markOf(b, c);
                 const last = state.lastMove?.board === b && state.lastMove.cell === c;
-                const shown = value ?? (mark?.kind === "ghost" ? state.currentPlayer : null);
+                const shown = value ?? (mark?.kind === "ghost" ? (mark.side ?? state.currentPlayer) : null);
                 return (
                   <button
                     key={c}

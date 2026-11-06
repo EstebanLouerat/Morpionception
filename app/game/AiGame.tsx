@@ -1,13 +1,15 @@
 "use client";
 
 import styles from "./Game.module.css";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button, ButtonLink } from "../ui/Button";
 import GameScreen from "./GameScreen";
 import { getMode } from "./modes";
 import { getSideSettings } from "./side";
 import { gameStorageKey } from "./savedGame";
+import { movesFromStates } from "../analysis/review";
+import { addRecentGame, analysisHref } from "../analysis/recent";
 import {
   applyMove,
   getBoardOutcome,
@@ -123,6 +125,16 @@ export default function AiGame() {
     };
   }, [aiTurn, game, level]);
 
+  // The moves of the game, for its analysis (null if they cannot be rebuilt)
+  const moves = useMemo(() => movesFromStates([...history, game]), [history, game]);
+  // Kept on the device once over, to be analysed later
+  const endReason = outcome?.reason ?? null;
+  const winner = outcome?.winner ?? null;
+  useEffect(() => {
+    if (endReason && moves)
+      addRecentGame({ mode: "ia", moves, you, opponent: `IA ${levelLabel(level)}`, winner, reason: endReason });
+  }, [endReason, winner, moves, you, level]);
+
   // Count the result once, for the record shown before a game
   useEffect(() => {
     if (!result || counted) return;
@@ -201,11 +213,18 @@ export default function AiGame() {
               Quitter
             </Button>
           </div>
-          {outcome?.winner && outcome.winner !== you && history.length > 0 && (
-            <Button variant="secondary" size="sm" className={styles.modalUndo} onClick={undo}>
-              Annuler mon dernier coup
-            </Button>
-          )}
+          <div className={styles.modalExtra}>
+            {moves && (
+              <ButtonLink variant="secondary" size="sm" icon="analysis" href={analysisHref(moves, you)}>
+                Analyser la partie
+              </ButtonLink>
+            )}
+            {outcome?.winner && outcome.winner !== you && history.length > 0 && (
+              <Button variant="secondary" size="sm" onClick={undo}>
+                Annuler mon dernier coup
+              </Button>
+            )}
+          </div>
         </>
       }
     />

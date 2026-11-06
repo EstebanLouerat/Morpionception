@@ -386,3 +386,20 @@ input.passwordInput {
     display: none;
   }
 }
+
+/* A game that can be analysed: its link at the end of the row */
+.analyse {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: var(--surface-muted);
+  color: var(--primary-x);
+}
+.analyse:focus-visible {
+  outline: 3px solid var(--primary-x);
+  outline-offset: 2px;
+}

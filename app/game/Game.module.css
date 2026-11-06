@@ -317,7 +317,12 @@
 .modalBtns > * {
   flex: 1;
 }
-.modalUndo {
+/* Under the buttons: analyse the game, undo a losing move */
+.modalExtra {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  justify-content: center;
   margin-top: 1rem;
 }
 

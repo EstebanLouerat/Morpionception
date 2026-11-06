@@ -36,10 +36,11 @@ Measured with Morpionception's rules, against the search as it was:
 
 The exploration constant is already 0.5 in `engine.ts`: it helps the lower levels
 and costs Expert nothing. Gains measured with few random games per move can shrink
-at Expert's budget, so check there too. Next free gains: an
-MCTS-Solver (about 40 lines), reusing the tree between moves, nodes in typed
-arrays (no allocation during the search), one search per Web Worker on several
-cores.
+at Expert's budget, so check there too. The MCTS-Solver is in `engine.ts` too (it
+also gives the analysis its exact forced wins); at 300 ms per move it played about
+even with the search before it (52.6 % over 96 games, mostly draws). Next free
+gains: reusing the tree between moves, nodes in typed arrays (no allocation during
+the search), one search per Web Worker on several cores.
 
 ## Step 1: check the rules (5 minutes)
 

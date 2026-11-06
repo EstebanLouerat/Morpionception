@@ -45,6 +45,14 @@ Ultimate tic-tac-toe ("morpion" in French) built with Next.js, React and Framer 
 - Game against the AI (`/jouer/partie?mode=ai`): four levels from Débutant to
   Expert, side choice, "Annuler" to take back a move, and a record of wins,
   draws and losses per level on this device. The AI runs in the browser.
+- Game analysis (`/analyse`, from the end of every game, the Jouer menu or the
+  games of the account page): the engine evaluates every position and grades each
+  move like a chess engine (meilleur coup, excellent, bon, imprécision, erreur,
+  gaffe), with the move it would have played and why ("X pouvait gagner la grille
+  au centre", "O a maintenant une victoire forcée en 3 coups"). An accuracy per
+  player, a graph of X's chances, a jump to your next error, and the board stays
+  open: any move can be tried and is evaluated live (a free board too). The last
+  12 games of the device are kept for later.
 - Ranked mode (`/jouer/classe`, account needed): matchmaking by rating, a
   rating like chess.com's (big jumps for new players that shrink game after game),
   ranks with divisions like Valorant from Bois to Morpion Mastermind, 5 placement
@@ -81,6 +89,8 @@ These are in the menus as "Bientôt" (coming soon) placeholders:
 | ------------------ | ----------------------------------------------------------- |
 | `app/game/`        | Game rules, game screen (local, AI, online), mode registry  |
 | `app/ai/`          | AI: search engine, Web Worker, levels and record            |
+| `app/analysis/`    | Game review: evaluations, grades, worker pool, recent games |
+| `app/analyse/`     | Analysis page (review, variations, free board)              |
 | `scripts/`         | AI tools, ranked ladder simulator                           |
 | `training/`        | Python side of AI training (OpenSpiel game export)          |
 | `docs/`            | Guides (training a stronger AI)                             |
@@ -106,9 +116,23 @@ These are in the menus as "Bientôt" (coming soon) placeholders:
 The AI (`app/ai/engine.ts`) uses Monte Carlo Tree Search: from the current
 position it plays thousands of random games to the end and picks the move that
 wins most often, spending its time on the most promising moves (UCT). The board
-is kept as bit masks (9 bits per small board and per player), which runs about
-65,000 random games per second. It runs in a Web Worker (`app/ai/ai.worker.ts`),
+is kept as bit masks (9 bits per small board and per player), which runs over
+100,000 random games per second. It runs in a Web Worker (`app/ai/ai.worker.ts`),
 so the page stays smooth while it thinks, and needs no server.
+
+The search is also a solver (MCTS-Solver): a position whose result is certain (the
+game ends, or every move is known to win or lose) is marked proven, and the proof
+climbs the tree. Like a chess engine's "mate in N", it finds forced wins exactly
+("X gagne de force en 3 coups"), takes the quickest one, holds out the longest
+when lost, and stops thinking once the position is solved.
+
+The analysis (`app/analysis/`) uses the same engine: every position of the game
+gets 25,000 random games (a fixed seed per position, so the same game always gets
+the same review), in up to 4 Web Workers at once: about 2 seconds for a game on a
+computer. A move is graded by the chances it cost its player (the expected score,
+a draw counting half): under 2 points excellent, 2 to 5 bon, 5 to 10 imprécision,
+10 to 18 erreur, 18 and more gaffe; the engine's own move is the meilleur coup.
+Accuracy uses lichess' curve from the points lost.
 
 | Level         | How it plays                                   |
 | ------------- | ---------------------------------------------- |
@@ -339,3 +363,4 @@ MONGODB_URI="mongodb+srv://…"
 | `npm run ai:check-openspiel -- <file>` | Replay OpenSpiel games through the game's rules              |
 | `npm run ranked:simulate`              | Points per game and ladder spread for the ranked settings    |
 | `npm run learn:check`                  | Checks every exercise of the strategy book against the rules |
+| `npm run analysis:check`               | Checks the solver, the game notation and the move grades     |

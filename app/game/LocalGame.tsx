@@ -1,13 +1,15 @@
 "use client";
 
 import styles from "./Game.module.css";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button, ButtonLink } from "../ui/Button";
 import GameScreen from "./GameScreen";
 import { getMode, type ModeId } from "./modes";
 import { getClockSettings } from "./clock";
 import { gameStorageKey } from "./savedGame";
+import { movesFromStates } from "../analysis/review";
+import { addRecentGame, analysisHref } from "../analysis/recent";
 import {
   applyMove,
   fullClocks,
@@ -126,6 +128,14 @@ export default function LocalGame() {
   }, [clockRunning, currentPlayer]);
 
   const winner = outcome?.winner;
+  // The moves of the game, for its analysis (null if they cannot be rebuilt)
+  const moves = useMemo(() => movesFromStates([...history, game]), [history, game]);
+  // Kept on the device once over, to be analysed later
+  const endReason = outcome?.reason ?? null;
+  useEffect(() => {
+    if (endReason && moves)
+      addRecentGame({ mode: "local", moves, you: null, opponent: "", winner: winner ?? null, reason: endReason });
+  }, [endReason, winner, moves]);
 
   return (
     <GameScreen
@@ -177,6 +187,13 @@ export default function LocalGame() {
               Quitter
             </Button>
           </div>
+          {moves && (
+            <div className={styles.modalExtra}>
+              <ButtonLink variant="secondary" size="sm" icon="analysis" href={analysisHref(moves)}>
+                Analyser la partie
+              </ButtonLink>
+            </div>
+          )}
         </>
       }
     />

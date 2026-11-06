@@ -367,6 +367,8 @@ export type FinishedGame = {
   players: Record<Side, string | null>;
   /** Small boards won by each side */
   boards: Record<Side, number>;
+  /** The moves, encoded (see app/analysis/notation.ts), null if they were not kept */
+  moves: string | null;
 };
 
 /** Adds an online game to the stats of the accounts that played it (with the rating
@@ -403,6 +405,7 @@ export const recordGame = async (
         side,
         opponentId: accountOf(other),
         boards: { mine: game.boards[side], theirs: game.boards[other] },
+        ...(game.moves && { moves: game.moves }),
         ...(ratings && {
           ranked: { delta: Math.round(ratings[side].after) - Math.round(ratings[side].before) },
         }),

@@ -24,7 +24,7 @@ import {
   winsGame,
 } from "../learn/positions";
 
-export { decodeMoves, encodeMoves, positionsOf } from "./notation";
+export { decodeMoves, encodeMoves, positionsOf, scoreSheet, squareName } from "./notation";
 
 /** A move from its number in the engine (board * 9 + cell), or a cell of the flat board */
 export const toMove = (m: number): Move => ({ board: Math.floor(m / 9), cell: m % 9 });
@@ -126,6 +126,10 @@ export const GRADES: Record<Grade, { label: string; symbol: string }> = {
   mistake: { label: "Erreur", symbol: "?" },
   blunder: { label: "Gaffe", symbol: "??" },
 };
+
+/** The annotation written after a move, as in chess: errors only (?!, ?, ??) */
+export const annotationOf = (grade: Grade | null | undefined) =>
+  grade === "inaccuracy" ? "?!" : grade === "mistake" ? "?" : grade === "blunder" ? "??" : "";
 
 /** The grades that count as errors, the worst last */
 export const ERRORS: Grade[] = ["inaccuracy", "mistake", "blunder"];

@@ -335,3 +335,54 @@
 .draw {
   color: var(--text-muted);
 }
+
+/* --- Chess notation: the move in the card, the score sheet --- */
+.notation {
+  font-variant-numeric: tabular-nums;
+}
+.notation .x,
+.notation .o {
+  font-weight: 900;
+}
+.sheetHelp {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+.sheet {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(8.2rem, 1fr));
+  gap: 0.15rem 0.6rem;
+  list-style: none;
+}
+.sheet li {
+  display: grid;
+  grid-template-columns: 1.9rem 1fr 1fr;
+  align-items: center;
+  gap: 0.2rem;
+}
+.sheetNumber {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+}
+.sheetMove {
+  padding: 0.2rem 0.3rem;
+  border: none;
+  border-radius: 7px;
+  background: none;
+  color: var(--grade, var(--text));
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+.sheetMove:hover,
+.sheetMove:focus-visible {
+  background: var(--surface-hover);
+  outline: none;
+}
+.sheetNow {
+  background: color-mix(in srgb, var(--primary-x) 18%, transparent);
+}

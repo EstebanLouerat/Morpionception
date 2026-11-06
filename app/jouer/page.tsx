@@ -11,7 +11,7 @@ import { playFx } from "../audio/engine";
 
 export default function Jouer() {
   return (
-    <PageShell title="Jouer">
+    <PageShell title="Jouer" scroll>
       <section className={ui.section}>
         <h2 className={ui.sectionTitle}>Modes de jeu</h2>
         <div className={styles.grid}>
@@ -60,13 +60,13 @@ export default function Jouer() {
 
       <section className={ui.section}>
         <h2 className={ui.sectionTitle}>Progresser</h2>
-        <div className={`${styles.grid} ${styles.pair}`}>
+        <div className={styles.grid}>
           <Link href="/apprendre" className={styles.card} onClick={() => playFx("click")}>
             <span className={styles.icon}>
               <Icon name="school" size={26} />
             </span>
             <span className={styles.text}>
-              <strong>Apprendre</strong>
+              <strong>Tutoriel et stratégie</strong>
               <small>Les règles en jouant, puis des conseils du débutant à l&apos;expert.</small>
             </span>
             <Icon name="chevronRight" className={styles.chevron} />

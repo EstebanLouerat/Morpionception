@@ -52,7 +52,11 @@ Ultimate tic-tac-toe ("morpion" in French) built with Next.js, React and Framer 
   au centre", "O a maintenant une victoire forcée en 3 coups"). An accuracy per
   player, a graph of X's chances, a jump to your next error, and the board stays
   open: any move can be tried and is evaluated live (a free board too). The last
-  12 games of the device are kept for later.
+  12 games of the device are kept for later. Moves are written as in chess: the
+  81 cells form one board, files a to i from left to right and ranks 1 to 9 from
+  the bottom (e5 is the center, i9 the top right corner), with the annotations
+  ?!, ? and ?? and the coordinates along the board; the score sheet
+  ("1. e5 d6?! 2. …") lists every move and can be copied.
 - Ranked mode (`/jouer/classe`, account needed): matchmaking by rating, a
   rating like chess.com's (big jumps for new players that shrink game after game),
   ranks with divisions like Valorant from Bois to Morpion Mastermind, 5 placement

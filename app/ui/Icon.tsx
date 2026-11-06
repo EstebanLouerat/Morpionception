@@ -152,6 +152,7 @@ const ICONS = {
     </>
   ),
   flag: <path d="M5 21V4M5 4h11l-2 4 2 4H5" />,
+  list: <path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01" />,
 } satisfies Record<string, ReactNode>;
 
 export type IconName = keyof typeof ICONS;

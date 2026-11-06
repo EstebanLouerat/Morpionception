@@ -1,4 +1,4 @@
-/* Exactly one screen tall: the content fits in it (see FitToScreen) */
+/* Exactly one screen tall: the content fits in it (see FitToScreen), or scrolls */
 .page {
   display: flex;
   flex-direction: column;
@@ -41,4 +41,20 @@
 }
 .wide {
   max-width: 1100px;
+}
+
+/* A long list: scrolls inside the page, the top bar stays */
+.scroll {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+/* Laid out like FitToScreen's content, at its natural size */
+.scrolled {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(0.75rem, 2.6dvh, 2rem);
+  width: 100%;
+  height: max-content;
+  padding: 4px 6px 8px;
 }

@@ -77,29 +77,3 @@ a.card:focus-visible {
   flex-shrink: 0;
   color: var(--primary-x);
 }
-
-/* Short screens: the name of each mode is enough */
-@media (max-height: 640px) {
-  .text small {
-    display: none;
-  }
-}
-
-/* Two cards side by side even on a phone: there, compact tiles (icon and name) */
-.pair {
-  grid-template-columns: 1fr 1fr;
-}
-@media (max-width: 559px) {
-  .pair .card {
-    gap: 0.6rem;
-    padding-inline: 0.75rem;
-  }
-  .pair .text small,
-  .pair .chevron {
-    display: none;
-  }
-  .pair .text strong {
-    font-size: 1rem;
-    line-height: 1.2;
-  }
-}

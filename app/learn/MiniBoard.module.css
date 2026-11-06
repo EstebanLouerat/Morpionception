@@ -138,3 +138,50 @@
     animation: none;
   }
 }
+
+/* --- Coordinates: ranks on the left, files below, each facing its row or column of
+   cells (groups of three with the boards' gap, padding and border) --- */
+.withCoords {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  column-gap: 1.2cqi;
+  row-gap: 0.8cqi;
+}
+.withCoords .big {
+  grid-column: 2;
+}
+.ranks,
+.files {
+  display: grid;
+  gap: 2.2cqi;
+  color: var(--text-muted);
+  font-size: 2.6cqi;
+  font-weight: 700;
+  line-height: 1;
+}
+.ranks {
+  grid-row: 1;
+  grid-template-rows: repeat(3, minmax(0, 1fr));
+}
+.files {
+  grid-column: 2;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.edgeGroup {
+  display: grid;
+  gap: 0.7cqi;
+}
+.ranks .edgeGroup {
+  grid-template-rows: repeat(3, minmax(0, 1fr));
+  padding-block: calc(0.9cqi + 2px);
+}
+.files .edgeGroup {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  padding-inline: calc(0.9cqi + 2px);
+}
+.edgeGroup span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

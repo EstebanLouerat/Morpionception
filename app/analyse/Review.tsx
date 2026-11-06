@@ -4,14 +4,18 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import styles from "./Analyse.module.css";
 import MiniBoard, { type CellMark } from "../learn/MiniBoard";
 import { Button, IconButton } from "../ui/Button";
+import Dialog from "../ui/Dialog";
 import { playFx } from "../audio/engine";
 import { applyMove, getBoardOutcome, isValidMove, type GameState, type Move, type Side } from "../game/rules";
 import { useGameReview, useLiveEval } from "../analysis/useReview";
 import {
+  annotationOf,
   ERRORS,
   GRADES,
   moveName,
   same,
+  scoreSheet,
+  squareName,
   scoreOf,
   summarize,
   type Grade,
@@ -36,6 +40,7 @@ const Review = ({ moves, you, names }: ReviewProps) => {
   const [ply, setPly] = useState(n);
   const [variation, setVariation] = useState<Move[]>([]);
   const [showBest, setShowBest] = useState(false);
+  const [sheet, setSheet] = useState(false);
 
   const base = positions[ply];
   const shown = useMemo(
@@ -130,6 +135,7 @@ const Review = ({ moves, you, names }: ReviewProps) => {
           state={shown}
           onTap={tap}
           cells={cells}
+          coords
           label={exploring ? "Variante" : `Position après ${ply} coup${ply > 1 ? "s" : ""}`}
         />
       </div>
@@ -178,7 +184,19 @@ const Review = ({ moves, you, names }: ReviewProps) => {
           </span>
           <IconButton icon="chevronRight" label="Coup suivant" onClick={forward} disabled={exploring || ply === n} />
           <IconButton icon="skipForward" label="Fin de la partie" onClick={() => go(n)} disabled={ply === n && !exploring} />
+          {n > 0 && <IconButton icon="list" label="Feuille de partie" onClick={() => setSheet(true)} />}
         </div>
+        <ScoreSheet
+          open={sheet}
+          onClose={() => setSheet(false)}
+          moves={moves}
+          reviews={reviews}
+          ply={exploring ? -1 : ply}
+          onPick={(to) => {
+            go(to);
+            setSheet(false);
+          }}
+        />
         <div className={styles.actions}>
           {n > 0 && (
             <Button size="sm" variant="secondary" icon="flag" onClick={() => nextError !== null && go(nextError)} disabled={nextError === null}>
@@ -201,6 +219,68 @@ const Review = ({ moves, you, names }: ReviewProps) => {
         </div>
       </div>
     </div>
+  );
+};
+
+/** The number of a move as in chess: "12." for X's 12th move, "12…" for O's answer */
+const numberOf = (ply: number) => `${Math.ceil(ply / 2)}${ply % 2 ? "." : "…"}`;
+
+type ScoreSheetProps = {
+  open: boolean;
+  onClose: () => void;
+  moves: Move[];
+  reviews: (MoveReview | null)[];
+  /** The move shown (-1: none, a variation) */
+  ply: number;
+  onPick: (ply: number) => void;
+};
+
+/** Every move of the game in chess notation, with its annotation; a tap goes there,
+ * and the whole sheet can be copied ("1. e5 d6?! 2. …") */
+const ScoreSheet = ({ open, onClose, moves, reviews, ply, onPick }: ScoreSheetProps) => {
+  const [copied, setCopied] = useState(false);
+  const pairs = Array.from({ length: Math.ceil(moves.length / 2) }, (_, i) => i);
+  const text = scoreSheet(moves, reviews.map((r) => annotationOf(r?.grade) || null));
+  const copy = () =>
+    navigator.clipboard
+      ?.writeText(text)
+      .then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      })
+      .catch(() => {});
+  const entry = (i: number) => {
+    const r = reviews[i];
+    return (
+      <button
+        type="button"
+        className={`${styles.sheetMove} ${r && ERRORS.includes(r.grade) ? styles[r.grade] : ""} ${ply === i + 1 ? styles.sheetNow : ""}`}
+        onClick={() => onPick(i + 1)}
+        title={r ? GRADES[r.grade].label : undefined}
+      >
+        {squareName(moves[i])}
+        {annotationOf(r?.grade)}
+      </button>
+    );
+  };
+  return (
+    <Dialog open={open} title="Feuille de partie" onClose={onClose} wide>
+      <p className={styles.sheetHelp}>
+        Colonnes a à i de gauche à droite, rangées 1 à 9 de bas en haut : e5 est le centre du plateau.
+      </p>
+      <ol className={styles.sheet}>
+        {pairs.map((p) => (
+          <li key={p}>
+            <span className={styles.sheetNumber}>{p + 1}.</span>
+            {entry(2 * p)}
+            {2 * p + 1 < moves.length && entry(2 * p + 1)}
+          </li>
+        ))}
+      </ol>
+      <Button size="sm" variant="secondary" icon="copy" onClick={copy}>
+        {copied ? "Copiée !" : "Copier la feuille"}
+      </Button>
+    </Dialog>
   );
 };
 
@@ -279,16 +359,20 @@ const MoveCard = ({ ply, moves, review, before, exploring, variation, live, game
       <div className={styles.card}>
         <div className={styles.cardHead}>
           <b>Variante</b>
-          <span className={styles.muted}>
-            {variation.length} coup{variation.length > 1 ? "s" : ""} essayé{variation.length > 1 ? "s" : ""} après le coup {ply}
+          <span className={styles.notation}>
+            {numberOf(ply + 1)} {variation.map(squareName).join(" ")}
           </span>
         </div>
         <p className={styles.cardText}>
-          {getBoardOutcome(game)
-            ? "Partie terminée dans cette variante."
-            : live?.best
-              ? `Le moteur jouerait ${moveName(live.best)}.`
-              : "Le moteur réfléchit…"}
+          {getBoardOutcome(game) ? (
+            "Partie terminée dans cette variante."
+          ) : live?.best ? (
+            <>
+              Le moteur jouerait <b>{squareName(live.best)}</b> ({moveName(live.best)}).
+            </>
+          ) : (
+            "Le moteur réfléchit…"
+          )}
         </p>
         <Button size="sm" variant="secondary" icon="arrowLeft" onClick={onBack}>
           Retour à la partie
@@ -315,8 +399,9 @@ const MoveCard = ({ ply, moves, review, before, exploring, variation, live, game
   return (
     <div className={styles.card}>
       <div className={styles.cardHead}>
-        <b>
-          {ply}. <span className={styles[side.toLowerCase()]}>{side}</span>
+        <b className={styles.notation}>
+          {numberOf(ply)} <span className={styles[side.toLowerCase()]}>{squareName(move)}</span>
+          {annotationOf(review?.grade)}
         </b>
         {review && grade ? (
           <span className={`${styles.grade} ${styles[review.grade]}`}>
@@ -332,7 +417,7 @@ const MoveCard = ({ ply, moves, review, before, exploring, variation, live, game
         {review && best && !same(best, move) && review.grade !== "forced" && review.grade !== "best" && (
           <>
             {" "}
-            <b>Meilleur : {moveName(best)}</b>
+            <b>Meilleur : {squareName(best)}</b>, {moveName(best)}
             {before && review.loss >= 0.005 && ` (${Math.round(review.loss * 100)} pt${review.loss >= 0.015 ? "s" : ""} perdus)`}.
           </>
         )}

@@ -2,6 +2,7 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import styles from "./MiniBoard.module.css";
+import { FILE_LABELS, RANK_LABELS } from "../analysis/notation";
 import { getBoardOutcome, getClosedBoards, getForcedBoard, type GameState, type Move, type Side } from "../game/rules";
 
 export type BoardMark = "send" | "danger" | "good" | "free";
@@ -19,13 +20,28 @@ type MiniBoardProps = {
   cells?: CellMark[];
   /** Read out with the board (what the board shows) */
   label: string;
+  /** Files (a to i) and ranks (1 to 9) along the edges, as on a chess board */
+  coords?: boolean;
 };
+
+/** Labels along one edge, grouped by three like the boards, so each faces its cells */
+const Edge = ({ labels, className }: { labels: string[]; className: string }) => (
+  <div className={className} aria-hidden="true">
+    {[0, 1, 2].map((g) => (
+      <div key={g} className={styles.edgeGroup}>
+        {labels.slice(g * 3, g * 3 + 3).map((l) => (
+          <span key={l}>{l}</span>
+        ))}
+      </div>
+    ))}
+  </div>
+);
 
 const sym = (c: string | null) => (c === "X" ? styles.x : c === "O" ? styles.o : "");
 
 /** A small, self-contained ultimate board for the lessons: the real position, its
  * marks popping in, the board to play outlined, and highlights a lesson asks for */
-const MiniBoard = ({ state, onTap, showForced = true, boards = {}, cells = [], label }: MiniBoardProps) => {
+const MiniBoard = ({ state, onTap, showForced = true, boards = {}, cells = [], label, coords = false }: MiniBoardProps) => {
   const closed = getClosedBoards(state);
   const forced = getForcedBoard(state, closed);
   const free = forced === null;
@@ -34,7 +50,8 @@ const MiniBoard = ({ state, onTap, showForced = true, boards = {}, cells = [], l
   const markOf = (board: number, cell: number) => cells.find((c) => c.board === board && c.cell === cell);
 
   return (
-    <div className={styles.wrap} role="group" aria-label={label}>
+    <div className={`${styles.wrap} ${coords ? styles.withCoords : ""}`} role="group" aria-label={label}>
+      {coords && <Edge labels={RANK_LABELS} className={styles.ranks} />}
       <div className={styles.big}>
         {state.superBoard.map((board, b) => {
           const playable = showForced && !over && !closed[b] && (free || forced === b);
@@ -101,6 +118,7 @@ const MiniBoard = ({ state, onTap, showForced = true, boards = {}, cells = [], l
           );
         })}
       </div>
+      {coords && <Edge labels={FILE_LABELS} className={styles.files} />}
     </div>
   );
 };

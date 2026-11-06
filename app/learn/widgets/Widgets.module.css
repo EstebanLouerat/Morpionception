@@ -1,0 +1,206 @@
+.widget {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(0.5rem, 1.6dvh, 0.85rem);
+  width: 100%;
+}
+.prompt {
+  font-weight: 800;
+  text-align: center;
+}
+.caption {
+  width: 100%;
+  min-height: 2.8em;
+  padding: 0.55rem 0.8rem;
+  border-radius: 12px;
+  background: var(--surface-muted);
+  color: var(--text-muted);
+  font-weight: 600;
+  line-height: 1.4;
+  text-align: center;
+}
+.caption b {
+  color: var(--text);
+}
+.success {
+  background: color-mix(in srgb, #16a085 16%, transparent);
+  color: #0e7a63;
+}
+.error {
+  background: color-mix(in srgb, #e5484d 13%, transparent);
+  color: #c4282e;
+}
+.info {
+  background: color-mix(in srgb, #2f80ed 13%, transparent);
+  color: #1f5fbf;
+}
+:global(:root[data-theme="dark"]) .success {
+  color: #4fd6b4;
+}
+:global(:root[data-theme="dark"]) .error {
+  color: #ff7b7f;
+}
+:global(:root[data-theme="dark"]) .info {
+  color: #8fb8ff;
+}
+.actions {
+  display: flex;
+  gap: 0.6rem;
+}
+
+/* --- Lines: one big 3 × 3 grid, the lines through the tapped square drawn over it --- */
+.lines {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-rows: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  width: min(100%, 40dvh, 320px);
+  aspect-ratio: 1;
+  padding: 6px;
+  border-radius: 18px;
+  background: var(--surface);
+  box-shadow: 0 4px 12px var(--shadow);
+}
+.lineCell {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid transparent;
+  border-radius: 12px;
+  background: var(--surface-muted);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition:
+    background 0.2s,
+    border-color 0.2s;
+}
+.lineCell:focus-visible {
+  outline: 3px solid var(--primary-x);
+  outline-offset: 2px;
+}
+.picked {
+  border-color: var(--primary-x);
+  background: color-mix(in srgb, var(--primary-x) 16%, var(--surface-muted));
+  color: var(--text);
+}
+.lineCount {
+  position: absolute;
+  right: 8px;
+  bottom: 6px;
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+.lineLayer {
+  position: absolute;
+  inset: 6px;
+  width: calc(100% - 12px);
+  height: calc(100% - 12px);
+  pointer-events: none;
+}
+.lineLayer line {
+  stroke: var(--primary-o);
+  stroke-width: 9;
+  stroke-linecap: round;
+  opacity: 0.75;
+}
+/* Boards of the big grid: each square drawn as a small board */
+.boardIcon {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 3px;
+  width: 52%;
+  aspect-ratio: 1;
+}
+.boardIcon i {
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--text) 14%, transparent);
+}
+
+/* --- Replay controls --- */
+.player {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.player button {
+  width: 40px;
+  height: 40px;
+}
+.counter {
+  min-width: 3.4rem;
+  text-align: center;
+  color: var(--text-muted);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- Checklist --- */
+.checklist {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
+  list-style: none;
+}
+.check {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.65rem 0.8rem;
+  border: 2px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 0.2s,
+    background 0.2s;
+}
+.check span:last-child {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+.check small {
+  color: var(--text-muted);
+  line-height: 1.35;
+}
+.box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--border);
+  border-radius: 7px;
+  color: #fff;
+}
+.ticked {
+  border-color: #16a085;
+  background: color-mix(in srgb, #16a085 10%, var(--surface));
+}
+.ticked .box {
+  border-color: #16a085;
+  background: #16a085;
+}
+.check:focus-visible {
+  outline: 3px solid var(--primary-x);
+  outline-offset: 2px;
+}
+
+/* Short screens: the checklist keeps its questions, the details go */
+@media (max-height: 620px) {
+  .check small {
+    display: none;
+  }
+  .check {
+    padding: 0.45rem 0.7rem;
+  }
+}

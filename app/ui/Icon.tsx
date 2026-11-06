@@ -102,6 +102,29 @@ const ICONS = {
   ),
   chevronRight: <path d="M9 6l6 6-6 6" />,
   chevronLeft: <path d="M15 6l-6 6 6 6" />,
+  book: (
+    <>
+      <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5z" />
+      <path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5" />
+    </>
+  ),
+  school: (
+    <>
+      <path d="M22 9 12 4 2 9l10 5 10-5z" />
+      <path d="M6 11.5V16c0 1.5 2.7 3 6 3s6-1.5 6-3v-4.5M22 9v5" />
+    </>
+  ),
+  check: <path d="M5 12.5l4.5 4.5L19 7" />,
+  pause: <path d="M8 5v14M16 5v14" />,
+  skipBack: <path d="M18 18 9 12l9-6zM6 6v12" />,
+  skipForward: <path d="M6 6l9 6-9 6zM18 6v12" />,
+  refresh: <path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7" />,
+  bulb: (
+    <>
+      <path d="M9 18h6M10 21h4" />
+      <path d="M12 3a6 6 0 0 0-3.6 10.8c.6.5 1 1.2 1.1 2.2h5c.1-1 .5-1.7 1.1-2.2A6 6 0 0 0 12 3z" />
+    </>
+  ),
   close: <path d="M18 6 6 18M6 6l12 12" />,
   help: (
     <>

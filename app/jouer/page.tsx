@@ -59,6 +59,20 @@ export default function Jouer() {
       </section>
 
       <section className={ui.section}>
+        <h2 className={ui.sectionTitle}>Apprendre</h2>
+        <Link href="/apprendre" className={styles.card} onClick={() => playFx("click")}>
+          <span className={styles.icon}>
+            <Icon name="school" size={26} />
+          </span>
+          <span className={styles.text}>
+            <strong>Tutoriel et stratégie</strong>
+            <small>Les règles en jouant, puis des conseils du débutant à l&apos;avancé.</small>
+          </span>
+          <Icon name="chevronRight" className={styles.chevron} />
+        </Link>
+      </section>
+
+      <section className={ui.section}>
         <h2 className={ui.sectionTitle}>En ligne</h2>
         <Link href="/jouer/ami" className={styles.card} onClick={() => playFx("click")}>
           <span className={styles.icon}>

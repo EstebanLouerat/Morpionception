@@ -11,6 +11,7 @@ import MiniBoard, { type BoardMark, type CellMark } from "../../learn/MiniBoard"
 import {
   boardName,
   cellName,
+  invalidMoveText,
   legalMoves,
   play,
   position,
@@ -19,6 +20,7 @@ import {
 } from "../../learn/positions";
 import { markTutorialDone } from "../../learn/progress";
 import { getClosedBoards, getForcedBoard, isValidMove, newGameState, type GameState, type Move } from "../../game/rules";
+
 
 type Feedback = { kind: "success" | "error" | "info"; text: string } | null;
 
@@ -99,18 +101,20 @@ const useStep = (step: number, history: GameState[], setHistory: (h: GameState[]
     return () => clearTimeout(timer);
   }, [step, state, history, setHistory]);
 
-  const forced = getForcedBoard(state, getClosedBoards(state));
+  // The board this step asks for: the one to play when the step opened
+  const [forced] = useState(() => getForcedBoard(state, getClosedBoards(state)));
+  // The cell a hint points at: the one that wins (a board, or the game)
+  const winning =
+    step === 6
+      ? legalMoves(state).find((m) => winsGame(state, m))
+      : legalMoves(state).find((m) => winsBoard(state, m));
+  const hint: CellMark[] = winning && !done && feedback ? [{ ...winning, kind: "hint" }] : [];
   const tapForced = (move: Move, then: (next: GameState) => void) => {
     if (done) return;
-    if (!isValidMove(state, move.board, move.cell)) {
+    const invalid = invalidMoveText(state, move);
+    if (invalid) {
       playFx("invalid");
-      setFeedback({
-        kind: "error",
-        text:
-          forced !== null && move.board !== forced
-            ? `Pas ici : tu dois jouer dans ${boardName(forced)}, encadrée.`
-            : "Cette case est déjà prise.",
-      });
+      setFeedback({ kind: "error", text: invalid });
       return;
     }
     const next = play(state, move);
@@ -202,7 +206,7 @@ const useStep = (step: number, history: GameState[], setHistory: (h: GameState[]
           </>
         ),
         state,
-        cells: done || !feedback ? [] : [{ board: 2, cell: 1, kind: "hint" }],
+        cells: hint,
         onTap: (move) => {
           if (done) return;
           if (isValidMove(state, move.board, move.cell) && !winsBoard(state, move)) {
@@ -250,7 +254,7 @@ const useStep = (step: number, history: GameState[], setHistory: (h: GameState[]
           </>
         ),
         state,
-        cells: done || !feedback ? [] : [{ board: 8, cell: 8, kind: "hint" }],
+        cells: hint,
         onTap: (move) => {
           if (done) return;
           if (isValidMove(state, move.board, move.cell) && !winsGame(state, move)) {

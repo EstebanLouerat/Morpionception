@@ -45,6 +45,8 @@ for (const lesson of LESSONS) {
   if (finish)
     for (const { move } of right) {
       const after = play(state, move);
+      if (legalMoves(after).length !== 1)
+        fail(`${lesson.id}: after ${move.board}/${move.cell}, the opponent should have exactly one reply`);
       for (const reply of legalMoves(after)) {
         const next = play(after, reply);
         if (!legalMoves(next).some((m) => winsGame(next, m)))

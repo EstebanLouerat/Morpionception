@@ -6,15 +6,15 @@ import ui from "../ui/common.module.css";
 import PageShell from "../ui/PageShell";
 import Icon from "../ui/Icon";
 import { playFx } from "../audio/engine";
-import { LESSONS } from "../learn/book";
+import { LESSONS, isExercise } from "../learn/book";
 import { useLearnProgress } from "../learn/progress";
 
 /** Learning, opened by the player only: the tutorial and the strategy book */
 export default function Apprendre() {
   const progress = useLearnProgress();
   const read = LESSONS.filter((l) => progress.read.includes(l.id)).length;
-  const puzzles = LESSONS.filter((l) => l.widget.kind === "puzzle");
-  const solved = puzzles.filter((l) => progress.solved.includes(l.id)).length;
+  const exercises = LESSONS.filter(isExercise);
+  const solved = exercises.filter((l) => progress.solved.includes(l.id)).length;
   const cards = [
     {
       href: "/apprendre/tutoriel",
@@ -29,7 +29,7 @@ export default function Apprendre() {
       icon: "book" as const,
       title: "Le livre de stratégie",
       text: `${LESSONS.length} leçons, du débutant à l'avancé : démos, énigmes, partie commentée. ${
-        read ? `${read}/${LESSONS.length} lues · ${solved}/${puzzles.length} énigmes résolues.` : ""
+        read ? `${read}/${LESSONS.length} lues · ${solved}/${exercises.length} exercices réussis.` : ""
       }`,
     },
   ];

@@ -8,9 +8,9 @@ import { Button } from "../../ui/Button";
 import { playFx } from "../../audio/engine";
 import { motionReduced } from "../../theme/appearance";
 import type { Puzzle, Verdict } from "../book";
-import { boardName, legalMoves, play, winsGame } from "../positions";
+import { invalidMoveText, legalMoves, play, winsGame } from "../positions";
 import { markSolved } from "../progress";
-import { getClosedBoards, getForcedBoard, isValidMove, type GameState, type Move } from "../../game/rules";
+import type { GameState, Move } from "../../game/rules";
 
 type Phase = "play" | "wrong" | "finish" | "won";
 
@@ -56,10 +56,10 @@ const PuzzleView = ({ id, puzzle }: { id: string; puzzle: Puzzle }) => {
       const reply = legalMoves(state)[0];
       setState((s) => play(s, reply));
       playFx("placeO");
-      setMessage({ kind: "info", text: "O n'avait que ce coup. À toi : gagne la partie !" });
+      setMessage({ kind: "info", text: puzzle.finish!.reply });
     }, 1000);
     return () => clearTimeout(timer);
-  }, [phase, state, puzzle.state.currentPlayer]);
+  }, [phase, state, puzzle.state.currentPlayer, puzzle.finish]);
 
   const solved = () => {
     markSolved(id);
@@ -69,13 +69,12 @@ const PuzzleView = ({ id, puzzle }: { id: string; puzzle: Puzzle }) => {
 
   const tap = (move: Move) => {
     if (phase === "wrong" || phase === "won") return;
-    if (!isValidMove(state, move.board, move.cell)) {
-      const forced = getForcedBoard(state, getClosedBoards(state));
+    // The opponent's reply is coming: the board waits for it
+    if (state.currentPlayer !== puzzle.state.currentPlayer) return;
+    const invalid = invalidMoveText(state, move);
+    if (invalid) {
       playFx("invalid");
-      setMessage({
-        kind: "error",
-        text: forced !== null && move.board !== forced ? `Joue dans ${boardName(forced)}, encadrée.` : "Case déjà prise.",
-      });
+      setMessage({ kind: "error", text: invalid });
       return;
     }
     const next = play(state, move);
@@ -84,12 +83,12 @@ const PuzzleView = ({ id, puzzle }: { id: string; puzzle: Puzzle }) => {
     if (phase === "finish") {
       if (winsGame(state, move)) {
         setPhase("won");
-        setMessage({ kind: "success", text: "Gagné ! Tu as forcé ton adversaire à t'ouvrir la porte." });
+        setMessage({ kind: "success", text: puzzle.finish!.won });
         solved();
       } else {
         setPhase("wrong");
         setVerdict(null);
-        setMessage({ kind: "error", text: "Pas celui-là : la grille centrale te donne la diagonale." });
+        setMessage({ kind: "error", text: puzzle.finish!.miss });
       }
       return;
     }

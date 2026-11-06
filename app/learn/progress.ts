@@ -19,8 +19,15 @@ const store = createPersistedStore<LearnProgress>(
 
 export const useLearnProgress = store.use;
 
-const add = (list: string[], id: string) => (list.includes(id) ? list : [...list, id]);
-
-export const markRead = (id: string) => store.set({ read: add(store.get().read, id) });
-export const markSolved = (id: string) => store.set({ solved: add(store.get().solved, id) });
-export const markTutorialDone = () => store.set({ tutorialDone: true });
+// Written only when something changes (no new state for the readers otherwise)
+export const markRead = (id: string) => {
+  const { read } = store.get();
+  if (!read.includes(id)) store.set({ read: [...read, id] });
+};
+export const markSolved = (id: string) => {
+  const { solved } = store.get();
+  if (!solved.includes(id)) store.set({ solved: [...solved, id] });
+};
+export const markTutorialDone = () => {
+  if (!store.get().tutorialDone) store.set({ tutorialDone: true });
+};

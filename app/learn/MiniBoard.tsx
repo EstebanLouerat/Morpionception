@@ -2,7 +2,7 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import styles from "./MiniBoard.module.css";
-import { getClosedBoards, getForcedBoard, type GameState, type Move } from "../game/rules";
+import { getBoardOutcome, getClosedBoards, getForcedBoard, type GameState, type Move } from "../game/rules";
 
 export type BoardMark = "send" | "danger" | "good" | "free";
 export type CellMark = { board: number; cell: number; kind: "hint" | "good" | "bad" | "ghost" };
@@ -28,13 +28,15 @@ const MiniBoard = ({ state, onTap, showForced = true, boards = {}, cells = [], l
   const closed = getClosedBoards(state);
   const forced = getForcedBoard(state, closed);
   const free = forced === null;
+  // A finished game has no board to play
+  const over = !!getBoardOutcome(state);
   const markOf = (board: number, cell: number) => cells.find((c) => c.board === board && c.cell === cell);
 
   return (
     <div className={styles.wrap} role="group" aria-label={label}>
       <div className={styles.big}>
         {state.superBoard.map((board, b) => {
-          const playable = showForced && !closed[b] && (free || forced === b);
+          const playable = showForced && !over && !closed[b] && (free || forced === b);
           const role = boards[b];
           return (
             <div

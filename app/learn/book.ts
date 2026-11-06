@@ -31,10 +31,21 @@ export type Puzzle = {
   judge: (state: GameState, move: Move) => Verdict;
   /** Said once solved */
   solution: string;
-  /** Solved in two moves: after the right one, the opponent's forced reply is played
-   * and the player finishes (a move that wins the game) */
-  finish?: boolean;
+  /** Solved in two moves: after the right one, the opponent's only reply is played and
+   * the player finishes with a move that wins the game */
+  finish?: {
+    /** Said once the opponent has replied */
+    reply: string;
+    /** Said when the finishing move does not win */
+    miss: string;
+    /** Said once won */
+    won: string;
+  };
 };
+
+/** Lessons with something to complete (a puzzle, a checklist): counted as solved */
+export const isExercise = (lesson: Lesson) =>
+  lesson.widget.kind === "puzzle" || lesson.widget.kind === "checklist";
 
 export type Widget =
   | { kind: "send" }
@@ -288,7 +299,11 @@ export const LESSONS: Lesson[] = [
       puzzle: {
         state: P_FORCE,
         prompt: "Joue dans la grille au milieu à gauche : gagne en deux coups.",
-        finish: true,
+        finish: {
+          reply: "O n'avait que ce coup : il t'envoie au centre. À toi : gagne la partie !",
+          miss: "Pas celui-là : la grille centrale complète ta diagonale.",
+          won: "Gagné ! Tu as forcé ton adversaire à t'ouvrir la porte.",
+        },
         judge: (state, move) => {
           if (forcesWin(state, move))
             return { ok: true, text: "O n'a qu'une case : le centre de sa grille, qui t'envoie au centre. À toi de finir !" };

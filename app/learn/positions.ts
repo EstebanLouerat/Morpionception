@@ -35,13 +35,28 @@ export const position = (boards: string[], turn: Side, active: number | null): G
   };
 };
 
-/** Every move the player to move may make */
+/** Every move the player to move may make (the open boards allowed, their empty cells) */
 export const legalMoves = (state: GameState): Move[] => {
   if (getBoardOutcome(state)) return [];
+  const closed = getClosedBoards(state);
+  const forced = getForcedBoard(state, closed);
   const moves: Move[] = [];
-  for (let board = 0; board < 9; board++)
-    for (let cell = 0; cell < 9; cell++) if (isValidMove(state, board, cell)) moves.push({ board, cell });
+  for (let board = 0; board < 9; board++) {
+    if (closed[board] || (forced !== null && forced !== board)) continue;
+    for (let cell = 0; cell < 9; cell++)
+      if (!state.superBoard[board][Math.floor(cell / 3)][cell % 3]) moves.push({ board, cell });
+  }
   return moves;
+};
+
+/** Why this move cannot be played (null when it can) */
+export const invalidMoveText = (state: GameState, move: Move): string | null => {
+  if (isValidMove(state, move.board, move.cell)) return null;
+  const closed = getClosedBoards(state);
+  const forced = getForcedBoard(state, closed);
+  if (forced !== null && move.board !== forced) return `Pas ici : tu dois jouer dans ${boardName(forced)}, encadrée.`;
+  if (closed[move.board]) return "Cette grille est fermée : choisis une grille ouverte.";
+  return "Cette case est déjà prise.";
 };
 
 export const play = (state: GameState, move: Move) => applyMove(state, move.board, move.cell);

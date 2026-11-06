@@ -129,6 +129,13 @@ export const isDead = (state: GameState, board: number) =>
 export const liveLines = (state: GameState, side: Side, board: number) =>
   LINES.filter((line) => line.includes(board) && line.every((b) => canWin(state, side, b)));
 
+/** The open boards that keep the most lines of the big board for the side */
+export const mostLiveBoards = (state: GameState, side: Side) => {
+  const open = [0, 1, 2, 3, 4, 5, 6, 7, 8].filter((b) => !state.winners[b]);
+  const most = Math.max(...open.map((b) => liveLines(state, side, b).length));
+  return open.filter((b) => liveLines(state, side, b).length === most);
+};
+
 /** The lines of the big board where the side holds two boards and can still win the third */
 export const bigThreats = (state: GameState, side: Side) =>
   LINES.filter(
@@ -166,6 +173,8 @@ const LINE_NAMES = [
   "la diagonale qui part d'en haut à droite",
 ];
 
-/** "la colonne de gauche" (a line of LINES) */
-export const lineName = (line: number[]) =>
-  LINE_NAMES[LINES.findIndex((l) => l.every((c, i) => c === line[i]))];
+/** "la colonne de gauche" (one of LINES) */
+export const lineName = (line: number[]) => LINE_NAMES[LINES.indexOf(line)];
+
+export const capital = (text: string) => text[0].toUpperCase() + text.slice(1);
+export const lower = (text: string) => text[0].toLowerCase() + text.slice(1);

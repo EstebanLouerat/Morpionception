@@ -5,7 +5,7 @@
 // finishable after the right answer, whatever the opponent replies (and when the goal is
 // the game, he has a single reply). A search has an answer and something else to tap.
 import { LESSONS } from "../app/learn/book";
-import { isDead, legalMoves, liveLines, play, winsBoard, winsGame } from "../app/learn/positions";
+import { isDead, legalMoves, liveLines, mostLiveBoards, play, winsBoard, winsGame } from "../app/learn/positions";
 
 let failures = 0;
 const fail = (message: string) => {
@@ -29,8 +29,7 @@ for (const lesson of LESSONS) {
     const { state } = widget;
     const open = [0, 1, 2, 3, 4, 5, 6, 7, 8].filter((b) => !state.winners[b]);
     const count = (b: number) => liveLines(state, state.currentPlayer, b).length;
-    const most = Math.max(...open.map(count));
-    const best = open.filter((b) => count(b) === most);
+    const best = mostLiveBoards(state, state.currentPlayer);
     console.log(`${lesson.id}: live lines ${open.map((b) => `${b}:${count(b)}`).join(" ")}`);
     if (best.length !== 1) fail(`${lesson.id}: ${best.length} boards keep the most lines, one expected`);
     // The widget starts on the center: finding the answer must take a tap
@@ -48,6 +47,8 @@ for (const lesson of LESSONS) {
   }
   if (widget.kind !== "puzzle") continue;
   const { state, judge, finish } = widget.puzzle;
+  // The texts speak to X about O
+  if (state.currentPlayer !== "X") fail(`${lesson.id}: the puzzle is not X to move`);
   const moves = legalMoves(state);
   const verdicts = moves.map((move) => ({ move, verdict: judge(state, move) }));
   const right = verdicts.filter((v) => v.verdict.ok);

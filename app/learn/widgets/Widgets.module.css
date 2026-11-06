@@ -209,10 +209,10 @@
 .lineLayer .liveLine {
   stroke: #16a085;
 }
+/* Faded in to 0.7 by the widget */
 .lineLayer .deadLine {
   stroke: #e5484d;
   stroke-dasharray: 10 16;
-  opacity: 0.7;
 }
 .wonX {
   background: color-mix(in srgb, var(--primary-x) 12%, var(--surface-muted));

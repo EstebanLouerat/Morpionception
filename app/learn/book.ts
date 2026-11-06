@@ -1,16 +1,18 @@
 // The strategy book: lessons from simple to advanced. Puzzles are judged with the game's
 // rules (see positions.ts); `npm run learn:check` checks every one has a solution and
 // that the judge agrees with it.
-import type { GameState, Move } from "../game/rules";
+import { otherSide, type GameState, type Move } from "../game/rules";
 import {
   bigThreats,
   boardName,
+  capital,
   boardWinGiven,
   cellName,
   forcesWin,
   givesFreeChoice,
   legalMoves,
   liveLines,
+  lower,
   play,
   position,
   threats,
@@ -51,7 +53,8 @@ export type Puzzle = {
 };
 
 /** Lessons with something to complete (a puzzle, a search, a checklist): counted as solved */
-export const isExercise = (lesson: Lesson) => !["send", "lines", "replay"].includes(lesson.widget.kind);
+export const isExercise = (lesson: Lesson) =>
+  (["puzzle", "live", "dead", "checklist"] as Widget["kind"][]).includes(lesson.widget.kind);
 
 export type Widget =
   | { kind: "send" }
@@ -75,8 +78,6 @@ export type Lesson = {
 
 // --- Judges ---
 
-const capital = (text: string) => text[0].toUpperCase() + text.slice(1);
-const lower = (text: string) => text[0].toLowerCase() + text.slice(1);
 
 /** A safe move: gives the opponent neither a free choice nor a board */
 const safety = (state: GameState, move: Move): Verdict => {
@@ -118,12 +119,13 @@ const doubleThreat = (state: GameState, move: Move): Verdict => {
 
 /** Every move gives the opponent a board: the right one gives him a board he cannot use */
 const lesserEvil = (state: GameState, move: Move): Verdict => {
+  const other = otherSide(state.currentPlayer);
   const after = play(state, move);
   // What a board he wins is worth to him: the threats it makes on the big board, then
   // its lines still open
   const worth = (reply: Move) => {
     const next = play(after, reply);
-    return bigThreats(next, "O").length * 10 + liveLines(next, "O", reply.board).length;
+    return bigThreats(next, other).length * 10 + liveLines(next, other, reply.board).length;
   };
   const gifts = legalMoves(after).filter((reply) => winsBoard(after, reply));
   const worst = gifts.reduce<Move | null>((best, r) => (!best || worth(r) > worth(best) ? r : best), null);
@@ -135,16 +137,16 @@ const lesserEvil = (state: GameState, move: Move): Verdict => {
     };
   if (!worst) return { ok: true, text: `Dans ${boardName(move.cell)}, il n'a rien à gagner.` };
   const next = play(after, worst);
-  const made = bigThreats(next, "O").find((line) => line.includes(worst.board));
+  const made = bigThreats(next, other).find((line) => line.includes(worst.board));
   if (made)
     return {
       ok: false,
       punish: worst,
       text: `Il gagne ${boardName(worst.board)}, et il ne lui manque plus que ${boardName(
-        made.find((b) => next.winners[b] !== "O")!
+        made.find((b) => next.winners[b] !== other)!
       )} pour gagner la partie.`,
     };
-  const lines = liveLines(next, "O", worst.board).length;
+  const lines = liveLines(next, other, worst.board).length;
   if (lines)
     return {
       ok: false,
@@ -157,7 +159,7 @@ const lesserEvil = (state: GameState, move: Move): Verdict => {
   };
 };
 
-/** Wins a board that makes two threats on the big board */
+/** Wins a board that makes two threats on the big board, without giving anything */
 const fork = (state: GameState, move: Move): Verdict => {
   if (!winsBoard(state, move))
     return { ok: false, text: "Ce coup ne gagne pas de grille : cherche une grille où tu as deux pions alignés." };
@@ -165,6 +167,8 @@ const fork = (state: GameState, move: Move): Verdict => {
   const missing = bigThreats(after, state.currentPlayer)
     .filter((line) => line.includes(move.board))
     .map((line) => boardName(line.find((b) => after.winners[b] !== state.currentPlayer)!));
+  const safe = safety(state, move);
+  if (missing.length >= 2 && !safe.ok) return { ...safe, text: `Deux menaces… mais ${lower(safe.text)}` };
   if (missing.length >= 2)
     return {
       ok: true,

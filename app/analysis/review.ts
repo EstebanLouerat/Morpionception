@@ -26,28 +26,42 @@ import {
 
 export { decodeMoves, encodeMoves, positionsOf } from "./notation";
 
+/** A move from its number in the engine (board * 9 + cell), or a cell of the flat board */
+export const toMove = (m: number): Move => ({ board: Math.floor(m / 9), cell: m % 9 });
+
+export const same = (a: Move | null | undefined, b: Move | null | undefined) =>
+  !!a && !!b && a.board === b.board && a.cell === b.cell;
+
 /** The moves of a game from positions it went through, in order (as saved for the undo
  * button: a position before each of your moves, so two moves apart against the AI),
- * the current one last. Null if they cannot be told apart. */
+ * the current one last. Null if they cannot be told apart, or if a saved position is
+ * not one (a damaged save). */
 export const movesFromStates = (states: GameState[]): Move[] | null => {
-  const moves: Move[] = [];
-  let game = newGameState();
-  for (const next of states) {
-    const after = next.superBoard.flat(2);
-    // The new marks, the player to move first, then (two moves apart) the other one
-    const added = game.superBoard
-      .flat(2)
-      .flatMap((cell, i) => (cell === after[i] ? [] : cell ? [-1] : [i]))
-      .sort((a, b) => (after[a] === game.currentPlayer ? -1 : 0) - (after[b] === game.currentPlayer ? -1 : 0));
-    if (added.includes(-1) || added.length > 2) return null;
-    for (const i of added) {
-      const move = { board: Math.floor(i / 9), cell: i % 9 };
-      if (getBoardOutcome(game) || !isValidMove(game, move.board, move.cell)) return null;
-      moves.push(move);
-      game = applyMove(game, move.board, move.cell);
+  try {
+    const moves: Move[] = [];
+    let game = newGameState();
+    for (const next of states) {
+      const after = next.superBoard.flat(2);
+      if (after.length !== 81) return null;
+      // The new marks, the player to move first, then (two moves apart) the other one
+      const added = game.superBoard
+        .flat(2)
+        .flatMap((cell, i) => (cell === after[i] ? [] : cell ? [-1] : [i]))
+        .sort((a, b) => (after[a] === game.currentPlayer ? -1 : 0) - (after[b] === game.currentPlayer ? -1 : 0));
+      if (added.includes(-1) || added.length > 2) return null;
+      for (const i of added) {
+        const move = toMove(i);
+        // Each new mark must be the one of the player whose move it is
+        if (after[i] !== game.currentPlayer) return null;
+        if (getBoardOutcome(game) || !isValidMove(game, move.board, move.cell)) return null;
+        moves.push(move);
+        game = applyMove(game, move.board, move.cell);
+      }
     }
+    return moves;
+  } catch {
+    return null;
   }
-  return moves;
 };
 
 // --- Evaluating a position ---
@@ -63,8 +77,6 @@ export type PositionEval = {
   /** Solved: the result with best play (winner null: a draw), in how many moves */
   proven: { winner: Side | null; plies: number } | null;
 };
-
-const toMove = (m: number): Move => ({ board: Math.floor(m / 9), cell: m % 9 });
 
 /** The same position always gets the same seed, so the same evaluation */
 const seedOf = (game: GameState) => {
@@ -142,7 +154,6 @@ export type MoveReview = {
 /** The expected score of a side in an evaluated position */
 export const scoreOf = (side: Side, e: PositionEval) => (side === "X" ? e.x : 1 - e.x);
 
-const same = (a: Move | null, b: Move) => !!a && a.board === b.board && a.cell === b.cell;
 
 /** The accuracy of a move from the points of winning chances it lost (lichess' curve) */
 const accuracyOf = (loss: number) =>
@@ -152,7 +163,10 @@ const accuracyOf = (loss: number) =>
 export const reviewMove = (game: GameState, move: Move, before: PositionEval, after: PositionEval): MoveReview => {
   const side = game.currentPlayer;
   const forced = legalMoves(game).length === 1;
-  const loss = forced || same(before.best, move) ? 0 : Math.max(0, scoreOf(side, before) - scoreOf(side, after));
+  let loss = forced || same(before.best, move) ? 0 : Math.max(0, scoreOf(side, before) - scoreOf(side, after));
+  // A proven win is exact (100 %), the next position's chances only estimated: unless
+  // that one is proven too, the win may still be there, the engine just cannot be sure
+  if (before.proven?.winner === side && !after.proven) loss = Math.min(loss, LIMITS[2][0]);
   const grade: Grade = forced
     ? "forced"
     : same(before.best, move) || loss < 0.005
@@ -181,8 +195,10 @@ const reasonOf = (game: GameState, move: Move, before: PositionEval, after: Posi
     const moves = Math.ceil(after.proven.plies / 2);
     return `${other} a maintenant une victoire forcée, en ${moves} ${moves > 1 ? "coups" : "coup"} au plus.`;
   }
-  if (before.proven?.winner === side && after.proven?.winner !== side)
-    return `${side} avait une victoire forcée et la laisse passer.`;
+  if (before.proven?.winner === side)
+    return after.proven
+      ? `${side} avait une victoire forcée et la laisse passer.`
+      : `${side} avait une victoire forcée : après ce coup, le moteur n'en trouve plus de sûre.`;
   if (givesFreeChoice(game, move)) return `${capital(boardName(move.cell))} est fermée : ${other} peut jouer où il veut.`;
   const gift = boardWinGiven(game, move);
   if (gift) return `Ce coup envoie ${other} dans ${boardName(gift.board)}, qu'il peut gagner tout de suite.`;

@@ -18,11 +18,6 @@ export type Evaluator = {
 export const poolSize = () =>
   Math.max(1, Math.min(4, (typeof navigator !== "undefined" ? navigator.hardwareConcurrency || 2 : 2) - 1));
 
-/** Without workers (they could not start), each position is evaluated on the page,
- * after a pause that lets it draw what changed */
-const evaluateHere = (task: Task) =>
-  setTimeout(() => task.resolve(evaluate(task.game, task.iterations)), 30);
-
 export const createEvaluator = (size = poolSize()): Evaluator => {
   const queue: Task[] = [];
   const idle: Worker[] = [];
@@ -30,6 +25,19 @@ export const createEvaluator = (size = poolSize()): Evaluator => {
   let started = 0;
   let broken = false;
   let disposed = false;
+  // Without workers (they could not start), the positions are evaluated on the page,
+  // one at a time with a pause between them so it can draw what changed; what is still
+  // waiting can be dropped (clear, dispose) like with workers
+  let here: ReturnType<typeof setTimeout> | null = null;
+  const runHere = () => {
+    if (here || disposed || !queue.length) return;
+    here = setTimeout(() => {
+      here = null;
+      const task = queue.shift();
+      if (task && !disposed) task.resolve(evaluate(task.game, task.iterations));
+      runHere();
+    }, 30);
+  };
 
   const fail = (worker: Worker) => {
     // Its task (if any) goes on without workers, and so does everything after it
@@ -37,8 +45,8 @@ export const createEvaluator = (size = poolSize()): Evaluator => {
     const task = busy.get(worker);
     busy.delete(worker);
     worker.terminate();
-    if (task) evaluateHere(task);
-    while (queue.length) evaluateHere(queue.shift()!);
+    if (task) queue.unshift(task);
+    runHere();
   };
 
   const spawn = (): Worker | null => {
@@ -47,11 +55,14 @@ export const createEvaluator = (size = poolSize()): Evaluator => {
       worker.onmessage = (e: MessageEvent<EvalResponse>) => {
         const task = busy.get(worker);
         busy.delete(worker);
-        if (task) {
-          if ("error" in e.data) evaluateHere(task);
-          else task.resolve(e.data.eval);
-        }
         idle.push(worker);
+        if (task) {
+          // The worker could not evaluate it: next in line, on the page
+          if ("error" in e.data) {
+            queue.unshift(task);
+            broken = true;
+          } else task.resolve(e.data.eval);
+        }
         pump();
       };
       worker.onerror = () => fail(worker);
@@ -66,12 +77,13 @@ export const createEvaluator = (size = poolSize()): Evaluator => {
 
   const pump = () => {
     while (queue.length && !disposed) {
-      if (broken) {
-        evaluateHere(queue.shift()!);
-        continue;
-      }
+      if (broken) return runHere();
       const worker = idle.pop() ?? (started < size ? spawn() : null);
-      if (!worker) return;
+      // None free; or none could start, and the next turn of the loop goes on without
+      if (!worker) {
+        if (broken) continue;
+        return;
+      }
       const task = queue.shift()!;
       busy.set(worker, task);
       worker.postMessage({ id: 0, game: task.game, iterations: task.iterations } satisfies EvalRequest);
@@ -91,6 +103,7 @@ export const createEvaluator = (size = poolSize()): Evaluator => {
     dispose: () => {
       disposed = true;
       queue.length = 0;
+      if (here) clearTimeout(here);
       for (const worker of [...idle, ...busy.keys()]) worker.terminate();
       idle.length = 0;
       busy.clear();

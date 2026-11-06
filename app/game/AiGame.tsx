@@ -125,11 +125,11 @@ export default function AiGame() {
     };
   }, [aiTurn, game, level]);
 
-  // The moves of the game, for its analysis (null if they cannot be rebuilt)
-  const moves = useMemo(() => movesFromStates([...history, game]), [history, game]);
-  // Kept on the device once over, to be analysed later
+  // Once over, the moves of the game for its analysis (null if they cannot be rebuilt),
+  // kept on the device to be analysed later
   const endReason = outcome?.reason ?? null;
   const winner = outcome?.winner ?? null;
+  const moves = useMemo(() => (endReason ? movesFromStates([...history, game]) : null), [endReason, history, game]);
   useEffect(() => {
     if (endReason && moves)
       addRecentGame({ mode: "ia", moves, you, opponent: `IA ${levelLabel(level)}`, winner, reason: endReason });

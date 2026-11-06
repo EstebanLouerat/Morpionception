@@ -137,8 +137,9 @@ const winningMove = (s: EngineState, moves: Uint8Array, n: number) => {
 // --- Monte Carlo Tree Search, with a solver ---
 // Plain UCT on random games, plus MCTS-Solver: a position whose result is certain
 // (the game is over, or every move is known to win or lose) is marked proven, and the
-// proof climbs the tree. Proven results are exact: "X wins in 5" like a chess engine's
-// mate in N, and the search stops once the position itself is solved.
+// proof climbs the tree. Who wins is then certain, like a chess engine's mate in N; the
+// number of moves is that of the line proven, so "in 5 at most" (the search stops once
+// the position itself is solved, a shorter win may be left unfound).
 
 type Rng = () => number;
 
@@ -168,8 +169,8 @@ class Node {
   children: Node[] = [];
   untried: number[];
   proof: Proof = UNKNOWN;
-  /** Once proven: moves to the end of the game with best play, this node's move
-   * included (the winner hurries, the loser holds out) */
+  /** Once proven: moves to the end of the game along the proven line, this node's
+   * move included (the winner takes the shortest win found, the loser holds out) */
   depth = 0;
   constructor(
     public move: number,
@@ -285,7 +286,8 @@ export type MoveInfo = {
   visits: number;
   /** Expected score for the player to move (win 1, draw 0.5) */
   value: number;
-  /** Proven result for the player to move, with the moves left to the end */
+  /** Proven result for the player to move, with the moves to the end of the line
+   * proven (at most that many for a win) */
   proven: { result: "win" | "loss" | "draw"; plies: number } | null;
 };
 

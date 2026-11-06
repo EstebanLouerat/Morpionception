@@ -11,6 +11,7 @@ import {
   ERRORS,
   GRADES,
   moveName,
+  same,
   scoreOf,
   summarize,
   type Grade,
@@ -25,9 +26,6 @@ type ReviewProps = {
   you: Side | null;
   names: Record<Side, string>;
 };
-
-const same = (a: Move | null | undefined, b: Move | null | undefined) =>
-  !!a && !!b && a.board === b.board && a.cell === b.cell;
 
 /** A game reviewed by the engine, move by move, with the board open to try other moves
  * (a variation, evaluated live) */
@@ -219,7 +217,7 @@ const EvalBar = ({ evaluation, game }: { evaluation: PositionEval | null | undef
       ? "Le moteur réfléchit…"
       : evaluation.proven
         ? evaluation.proven.winner
-          ? `${evaluation.proven.winner} gagne de force en ${Math.ceil(evaluation.proven.plies / 2)} coup${evaluation.proven.plies > 2 ? "s" : ""}`
+          ? `${evaluation.proven.winner} gagne de force, en ${Math.ceil(evaluation.proven.plies / 2)} coup${evaluation.proven.plies > 2 ? "s" : ""} au plus`
           : "Égalité forcée"
         : `X ${percent} % · O ${100 - percent} %`;
   return (

@@ -128,10 +128,10 @@ export default function LocalGame() {
   }, [clockRunning, currentPlayer]);
 
   const winner = outcome?.winner;
-  // The moves of the game, for its analysis (null if they cannot be rebuilt)
-  const moves = useMemo(() => movesFromStates([...history, game]), [history, game]);
-  // Kept on the device once over, to be analysed later
+  // Once over, the moves of the game for its analysis (null if they cannot be rebuilt),
+  // kept on the device to be analysed later
   const endReason = outcome?.reason ?? null;
+  const moves = useMemo(() => (endReason ? movesFromStates([...history, game]) : null), [endReason, history, game]);
   useEffect(() => {
     if (endReason && moves)
       addRecentGame({ mode: "local", moves, you: null, opponent: "", winner: winner ?? null, reason: endReason });

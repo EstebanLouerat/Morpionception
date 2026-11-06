@@ -111,7 +111,8 @@ export type RoomView = {
   outcome: Outcome;
   /** Moves played this round */
   moves: number;
-  /** Those moves, in order (null for a round begun before they were kept) */
+  /** Those moves in order, once the round is over (null before, and for a round begun
+   * before they were kept) */
   history: Move[] | null;
   /** The result of this round went into the players' stats */
   recorded: boolean;

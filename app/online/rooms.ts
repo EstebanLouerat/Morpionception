@@ -193,8 +193,9 @@ const viewFor = (room: Room, you: Side, profiles: Map<string, PublicProfile>): R
     clockRunning: room.turnStartedAt !== null,
     outcome: room.outcome,
     moves: room.moves,
-    // Rounds begun before moves were kept cannot be replayed
-    history: room.history && room.history.length === room.moves ? room.history : null,
+    // For the analysis, once the round is over (rounds begun before moves were kept
+    // cannot be replayed)
+    history: room.outcome && room.history && room.history.length === room.moves ? room.history : null,
     recorded: room.recorded,
     ranked: room.ranked ?? null,
     ratings: room.ratings ?? null,

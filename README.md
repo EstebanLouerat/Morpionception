@@ -122,9 +122,10 @@ so the page stays smooth while it thinks, and needs no server.
 
 The search is also a solver (MCTS-Solver): a position whose result is certain (the
 game ends, or every move is known to win or lose) is marked proven, and the proof
-climbs the tree. Like a chess engine's "mate in N", it finds forced wins exactly
-("X gagne de force en 3 coups"), takes the quickest one, holds out the longest
-when lost, and stops thinking once the position is solved.
+climbs the tree. Like a chess engine's "mate in N", it proves forced wins ("X gagne
+de force, en 3 coups au plus": the length of the line proven, as the search stops
+once the position is solved), takes the quickest win found and holds out the
+longest when lost.
 
 The analysis (`app/analysis/`) uses the same engine: every position of the game
 gets 25,000 random games (a fixed seed per position, so the same game always gets

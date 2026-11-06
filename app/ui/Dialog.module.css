@@ -41,3 +41,9 @@
   color: var(--text);
   cursor: pointer;
 }
+
+/* The dialog lays out its own content */
+.dialog .body {
+  gap: 0.75rem;
+  padding: 0;
+}

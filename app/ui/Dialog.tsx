@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import styles from "./Dialog.module.css";
 import Icon from "./Icon";
+import FitToScreen from "./FitToScreen";
 
 type DialogProps = {
   open: boolean;
@@ -48,7 +49,8 @@ const Dialog = ({ open, title, onClose, children }: DialogProps) => {
                 <Icon name="close" size={20} />
               </button>
             </header>
-            {children}
+            {/* Shrunk on short screens rather than scrolled */}
+            <FitToScreen className={styles.body}>{children}</FitToScreen>
           </motion.div>
         </motion.div>
       )}

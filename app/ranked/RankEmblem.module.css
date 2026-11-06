@@ -30,9 +30,48 @@
     transform: rotate(360deg);
   }
 }
+/* --- The best rank's aura (MastermindAura): light behind the emblem --- */
+.auraWrap {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+}
+.auraWrap > svg {
+  position: relative;
+  z-index: 1;
+}
+.aura,
+.auraFallback {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 0;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+/* Without WebGL: a glow in the same colors */
+.auraFallback {
+  border-radius: 50%;
+  background: radial-gradient(
+    circle closest-side,
+    rgba(255, 224, 102, 0.55),
+    rgba(155, 90, 255, 0.4) 45%,
+    rgba(255, 90, 140, 0.18) 70%,
+    transparent
+  );
+  animation: auraPulse 3s ease-in-out infinite alternate;
+}
+@keyframes auraPulse {
+  to {
+    transform: translate(-50%, -50%) scale(1.12);
+    opacity: 0.8;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .mastermind,
-  .rays {
+  .rays,
+  .auraFallback {
     animation: none;
   }
 }

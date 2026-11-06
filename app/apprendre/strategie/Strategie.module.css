@@ -1,0 +1,68 @@
+/* Table of contents */
+.level {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.level h3 {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.level ol {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  list-style: none;
+}
+.entry {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0.5rem 0.6rem;
+  border: none;
+  border-radius: 10px;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.entry:hover,
+.entry:focus-visible {
+  background: var(--surface-hover);
+  outline: none;
+}
+.current {
+  background: color-mix(in srgb, var(--primary-x) 14%, transparent);
+}
+.entryTitle {
+  flex: 1;
+  min-width: 0;
+  font-weight: 700;
+}
+.entry small {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+.state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--border);
+  border-radius: 50%;
+  color: #fff;
+}
+.read {
+  border-color: var(--primary-x);
+  background: var(--primary-x);
+}
+.solved {
+  border-color: #16a085;
+  background: #16a085;
+}

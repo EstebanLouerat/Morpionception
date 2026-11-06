@@ -1,0 +1,127 @@
+/* --- A lesson or a tutorial step: words, then the board (side by side when wide) --- */
+.stage {
+  display: grid;
+  gap: clamp(0.6rem, 2dvh, 1.1rem);
+  align-items: center;
+}
+.stage > * {
+  min-width: 0;
+}
+@media (min-width: 760px) and (orientation: landscape) {
+  .stage {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+    gap: 2rem;
+  }
+}
+.words {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(0.5rem, 1.6dvh, 0.85rem);
+}
+.kicker {
+  color: var(--primary-x);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.title {
+  font-size: clamp(1.25rem, 3.4dvh, 1.6rem);
+  line-height: 1.2;
+}
+.text {
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+.text b {
+  color: var(--text);
+}
+
+/* What happened: an answer, a hint, a success */
+.feedback {
+  min-height: 2.6em;
+  padding: 0.55rem 0.8rem;
+  border-radius: 12px;
+  font-weight: 700;
+  line-height: 1.4;
+  background: var(--surface-muted);
+}
+.feedback:empty {
+  visibility: hidden;
+}
+.success {
+  background: color-mix(in srgb, #16a085 16%, transparent);
+  color: #0e7a63;
+}
+.error {
+  background: color-mix(in srgb, #e5484d 13%, transparent);
+  color: #c4282e;
+}
+.info {
+  background: color-mix(in srgb, #2f80ed 13%, transparent);
+  color: #1f5fbf;
+}
+:global(:root[data-theme="dark"]) .success {
+  color: #4fd6b4;
+}
+:global(:root[data-theme="dark"]) .error {
+  color: #ff7b7f;
+}
+:global(:root[data-theme="dark"]) .info {
+  color: #8fb8ff;
+}
+
+/* Previous / next */
+.nav {
+  display: flex;
+  gap: 0.75rem;
+}
+.nav > * {
+  flex: 1;
+}
+
+/* Steps: one dot each */
+.dots {
+  display: flex;
+  gap: 0.35rem;
+}
+.dots span {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  background: var(--border);
+  transition:
+    background 0.3s,
+    width 0.3s;
+}
+.dots .done {
+  background: color-mix(in srgb, var(--primary-x) 55%, var(--border));
+}
+.dots .now {
+  width: 1.4rem;
+  border-radius: 999px;
+  background: var(--primary-x);
+}
+
+.bullets {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding-left: 1.2rem;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+.bullets b {
+  color: var(--text);
+}
+
+/* Short screens: tighter words, the dots go (the kicker says where you are) */
+@media (max-height: 700px) {
+  .text {
+    font-size: 0.9rem;
+    line-height: 1.4;
+  }
+  .words .dots {
+    display: none;
+  }
+}

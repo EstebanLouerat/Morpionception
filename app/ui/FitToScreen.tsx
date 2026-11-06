@@ -74,6 +74,7 @@ const FitToScreen = ({ children, className }: { children: ReactNode; className?:
     // content always starts at the top
     const toTop = () => {
       if (box.scrollTop) box.scrollTop = 0;
+      if (box.scrollLeft) box.scrollLeft = 0;
     };
     box.addEventListener("scroll", toTop);
     fit();

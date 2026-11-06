@@ -33,6 +33,10 @@ export default function Home() {
         <ButtonLink href="/jouer/ami" variant="secondary" icon="userPlus" fullWidth>
           Jouer avec un ami
         </ButtonLink>
+        {/* Learning is only ever opened from here (or the Jouer menu), never by itself */}
+        <ButtonLink href="/apprendre" variant="secondary" icon="school" fullWidth>
+          Apprendre à jouer
+        </ButtonLink>
       </nav>
     </main>
   );

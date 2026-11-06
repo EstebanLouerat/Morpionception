@@ -1,0 +1,140 @@
+/* As big as the room allows, square, never more than the screen's height can take */
+.wrap {
+  width: min(100%, 46dvh, 460px);
+  margin: 0 auto;
+  container-type: inline-size;
+}
+/* minmax(0, 1fr): the tracks never grow with their content, the board stays square */
+.big {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-rows: repeat(3, minmax(0, 1fr));
+  gap: 2.2cqi;
+  aspect-ratio: 1;
+}
+.board {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-rows: repeat(3, minmax(0, 1fr));
+  gap: 0.7cqi;
+  padding: 0.9cqi;
+  border: 2px solid transparent;
+  border-radius: 2.4cqi;
+  background: var(--surface);
+  box-shadow: 0 2px 6px var(--shadow);
+  transition:
+    border-color 0.3s,
+    background 0.3s,
+    opacity 0.3s;
+}
+.cell {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1;
+  padding: 0;
+  border: none;
+  border-radius: 1.2cqi;
+  background: var(--surface-muted);
+  font: inherit;
+  font-size: 5.6cqi;
+  font-weight: 800;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.cell:disabled {
+  cursor: default;
+}
+.cell:focus-visible {
+  outline: 2px solid var(--primary-x);
+  outline-offset: 1px;
+}
+.x {
+  color: var(--primary-x);
+}
+.o {
+  color: var(--primary-o);
+}
+
+/* The board to play, and every open board when the choice is free */
+.playX {
+  border-color: var(--primary-x);
+}
+.playO {
+  border-color: var(--primary-o);
+}
+.freeBoard {
+  border-style: dashed;
+}
+
+/* Roles a lesson gives to boards */
+.send {
+  border-color: #2f80ed;
+  background: color-mix(in srgb, #2f80ed 14%, var(--surface));
+  animation: pulse 1.4s ease-in-out infinite;
+}
+.danger {
+  border-color: #e5484d;
+  background: color-mix(in srgb, #e5484d 14%, var(--surface));
+}
+.good {
+  border-color: #16a085;
+  background: color-mix(in srgb, #16a085 14%, var(--surface));
+}
+@keyframes pulse {
+  50% {
+    box-shadow: 0 0 0 1.2cqi color-mix(in srgb, #2f80ed 30%, transparent);
+  }
+}
+
+/* Won boards: tinted, with the winner's mark over them */
+.wonX {
+  background: color-mix(in srgb, var(--primary-x) 22%, var(--surface));
+}
+.wonO {
+  background: color-mix(in srgb, var(--primary-o) 22%, var(--surface));
+}
+.winner {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24cqi;
+  font-weight: 900;
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+/* Cells a lesson points at */
+.last {
+  box-shadow: inset 0 0 0 0.45cqi currentColor;
+}
+.hint {
+  animation: hint 1.1s ease-in-out infinite;
+}
+@keyframes hint {
+  50% {
+    background: color-mix(in srgb, #f2c94c 55%, var(--surface-muted));
+    box-shadow: 0 0 0 0.6cqi #f2c94c;
+  }
+}
+.good.cell {
+  background: color-mix(in srgb, #16a085 30%, var(--surface-muted));
+}
+.bad.cell {
+  background: color-mix(in srgb, #e5484d 30%, var(--surface-muted));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .send,
+  .hint {
+    animation: none;
+  }
+}

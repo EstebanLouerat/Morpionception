@@ -55,6 +55,11 @@ Ultimate tic-tac-toe ("morpion" in French) built with Next.js, React and Framer 
 - Leaderboard (`/classement`): the top 50 ranked players. The top 3 wear a gold,
   silver or bronze crown on their avatar: on the home page, the account page and
   next to their symbol in every online game.
+- Learning (`/apprendre`, opened only from the home page or the Jouer menu, never
+  by itself): an interactive tutorial that teaches the rules by playing on a live
+  board, and a strategy book of 9 lessons from beginner to advanced, with demos,
+  puzzles (a wrong move is answered by the reply that punishes it), a commented
+  game and a checklist. Progress is kept on the device.
 - Light / dark theme and three player color palettes.
 - Accessibility (Paramètres > Accessibilité): bigger cells (Normale, Grande, or
   Maximale: the grid takes the whole screen), big X and O, high contrast (visible
@@ -87,6 +92,8 @@ These are in the menus as "Bientôt" (coming soon) placeholders:
 | `app/classement/`  | Leaderboard page                                            |
 | `app/compte/`      | Account, stats and profile pages                            |
 | `app/parametres/`  | Settings (audio, appearance)                                |
+| `app/learn/`       | Tutorial and strategy book: positions, lessons, widgets     |
+| `app/apprendre/`   | Learning pages (hub, tutorial, strategy book)               |
 | `app/ui/`          | Shared components: buttons, icons, loader, page layout      |
 | `app/audio/`       | Web Audio sound effects and music                           |
 | `app/theme/`       | Theme and palette settings, applied before the first paint  |
@@ -329,3 +336,4 @@ MONGODB_URI="mongodb+srv://…"
 | `npm run ai:arena -- <a> <b> [games]`  | Games between two AIs (levels, `it:<n>`, `ms:<n>`, `random`) |
 | `npm run ai:check-openspiel -- <file>` | Replay OpenSpiel games through the game's rules              |
 | `npm run ranked:simulate`              | Points per game and ladder spread for the ranked settings    |
+| `npm run learn:check`                  | Checks every puzzle of the strategy book against the rules   |

@@ -59,17 +59,29 @@ export default function Jouer() {
       </section>
 
       <section className={ui.section}>
-        <h2 className={ui.sectionTitle}>Apprendre</h2>
-        <Link href="/apprendre" className={styles.card} onClick={() => playFx("click")}>
-          <span className={styles.icon}>
-            <Icon name="school" size={26} />
-          </span>
-          <span className={styles.text}>
-            <strong>Tutoriel et stratégie</strong>
-            <small>Les règles en jouant, puis des conseils du débutant à l&apos;avancé.</small>
-          </span>
-          <Icon name="chevronRight" className={styles.chevron} />
-        </Link>
+        <h2 className={ui.sectionTitle}>Progresser</h2>
+        <div className={`${styles.grid} ${styles.pair}`}>
+          <Link href="/apprendre" className={styles.card} onClick={() => playFx("click")}>
+            <span className={styles.icon}>
+              <Icon name="school" size={26} />
+            </span>
+            <span className={styles.text}>
+              <strong>Apprendre</strong>
+              <small>Les règles en jouant, puis des conseils du débutant à l&apos;expert.</small>
+            </span>
+            <Icon name="chevronRight" className={styles.chevron} />
+          </Link>
+          <Link href="/analyse" className={styles.card} onClick={() => playFx("click")}>
+            <span className={styles.icon}>
+              <Icon name="analysis" size={26} />
+            </span>
+            <span className={styles.text}>
+              <strong>Analyse</strong>
+              <small>Le moteur revoit tes parties et montre tes erreurs.</small>
+            </span>
+            <Icon name="chevronRight" className={styles.chevron} />
+          </Link>
+        </div>
       </section>
 
       <section className={ui.section}>

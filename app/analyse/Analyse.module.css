@@ -1,0 +1,337 @@
+/* --- The review: the board (and its evaluation), then what the engine says --- */
+.review {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(0.5rem, 1.4dvh, 0.9rem);
+}
+.review > * {
+  min-width: 0;
+}
+.boardSide {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45rem;
+}
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(0.45rem, 1.3dvh, 0.8rem);
+}
+@media (min-width: 760px) and (orientation: landscape) {
+  .review {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 1.6rem;
+    align-items: center;
+  }
+}
+
+/* Grades, from the best to the worst */
+.best {
+  --grade: #16a085;
+}
+.excellent {
+  --grade: #2f9e44;
+}
+.good {
+  --grade: #74a816;
+}
+.forced {
+  --grade: #8a8f98;
+}
+.inaccuracy {
+  --grade: #d9a400;
+}
+.mistake {
+  --grade: #f08c00;
+}
+.blunder {
+  --grade: #e5484d;
+}
+.x {
+  color: var(--primary-x);
+}
+.o {
+  color: var(--primary-o);
+}
+.muted {
+  color: var(--text-muted);
+}
+
+/* --- Evaluation bar: X's share, above the board --- */
+.evalBar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  width: min(100%, 46dvh, 460px);
+}
+.bar {
+  width: 100%;
+  height: 10px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--primary-o);
+}
+.barX {
+  display: block;
+  height: 100%;
+  background: var(--primary-x);
+  transition: width 0.5s ease;
+}
+.evalText {
+  font-size: 0.85rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.thinking {
+  color: var(--text-muted);
+  animation: thinking 1.2s ease-in-out infinite;
+}
+@keyframes thinking {
+  50% {
+    opacity: 0.45;
+  }
+}
+
+/* --- Players: accuracy and errors --- */
+.players {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+.player {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.15rem 0.5rem;
+  padding: 0.5rem 0.7rem;
+  border: 2px solid transparent;
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: 0 2px 8px var(--shadow);
+}
+.you {
+  border-color: color-mix(in srgb, var(--primary-x) 45%, transparent);
+}
+.who {
+  overflow: hidden;
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.accuracy {
+  font-size: 1.05rem;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+.accuracy small {
+  color: var(--text-muted);
+}
+.counts {
+  display: flex;
+  grid-column: 1 / -1;
+  gap: 0.6rem;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+.counts > span {
+  color: var(--grade);
+}
+
+/* --- The move shown --- */
+.card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.35rem;
+  min-height: 6.2rem;
+  padding: 0.65rem 0.85rem;
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: 0 2px 8px var(--shadow);
+}
+.cardHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem 0.6rem;
+}
+.cardText {
+  color: var(--text-muted);
+  font-size: 0.92rem;
+  line-height: 1.4;
+}
+.cardText b {
+  color: var(--text);
+}
+.card small {
+  font-size: 0.78rem;
+}
+.grade {
+  padding: 0.12rem 0.55rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--grade) 18%, transparent);
+  color: var(--grade);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+/* --- Graph: X's chances over the game --- */
+.graphBox {
+  position: relative;
+}
+.graph {
+  position: relative;
+  height: clamp(48px, 8dvh, 76px);
+  overflow: hidden;
+  border-radius: 12px;
+  background: var(--surface-muted);
+  cursor: pointer;
+  touch-action: none;
+}
+.graph svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.areaX {
+  fill: color-mix(in srgb, var(--primary-x) 35%, transparent);
+}
+.areaO {
+  fill: color-mix(in srgb, var(--primary-o) 35%, transparent);
+}
+.midLine {
+  stroke: var(--border);
+  stroke-width: 1;
+}
+.curve {
+  fill: none;
+  stroke: var(--text);
+  stroke-width: 1.5;
+  opacity: 0.7;
+}
+.cursor {
+  stroke: var(--text);
+  stroke-width: 2;
+}
+.dot {
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  border: 1.5px solid var(--surface);
+  border-radius: 50%;
+  background: var(--grade);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+.progress {
+  position: absolute;
+  inset: auto 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--surface) 55%, transparent);
+  pointer-events: none;
+}
+.progress span {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 4px;
+  background: var(--primary-x);
+  transition: width 0.3s;
+}
+.progress small {
+  font-weight: 800;
+}
+
+/* --- Controls --- */
+.controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+}
+.controls button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.counter {
+  min-width: 3.6rem;
+  text-align: center;
+  color: var(--text-muted);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+/* --- Home: the games finished on this device --- */
+.games {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  list-style: none;
+}
+.game {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 0.8rem;
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: 0 2px 8px var(--shadow);
+  color: var(--text);
+  text-decoration: none;
+}
+.game:focus-visible {
+  outline: 3px solid var(--primary-x);
+  outline-offset: 2px;
+}
+.gameIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--surface-muted);
+  color: var(--primary-x);
+}
+.gameText {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+.gameText strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.gameText small {
+  color: var(--text-muted);
+}
+.result {
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+.win {
+  color: #16a085;
+}
+.loss {
+  color: #e5484d;
+}
+.draw {
+  color: var(--text-muted);
+}

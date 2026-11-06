@@ -6,6 +6,7 @@
 // a few times per second, and say every few seconds that they are still open.
 // Room documents: _id is the code; seat tokens are server-made UUIDs, safe in field paths.
 import "server-only";
+import { encodeMoves } from "../analysis/notation";
 import { randomInt, randomUUID } from "node:crypto";
 import { profilesOf, recordGame, type FinishedGame } from "../account/accounts";
 import type { PublicProfile } from "../account/protocol";
@@ -192,6 +193,9 @@ const viewFor = (room: Room, you: Side, profiles: Map<string, PublicProfile>): R
     clockRunning: room.turnStartedAt !== null,
     outcome: room.outcome,
     moves: room.moves,
+    // For the analysis, once the round is over (rounds begun before moves were kept
+    // cannot be replayed)
+    history: room.outcome && room.history && room.history.length === room.moves ? room.history : null,
     recorded: room.recorded,
     ranked: room.ranked ?? null,
     ratings: room.ratings ?? null,
@@ -378,6 +382,7 @@ const endGame = (room: Room, effects: Effects, outcome: NonNullable<Outcome>, re
     winner: outcome.winner,
     players,
     boards: { X: countBoards(room.game.winners, "X"), O: countBoards(room.game.winners, "O") },
+    moves: room.history && room.history.length === room.moves ? encodeMoves(room.history) : null,
   };
   if (room.ranked && room.recorded) effects.rate = { round: room.round };
 };

@@ -36,6 +36,8 @@ export type GameRecord = {
   boards: { mine: number; theirs: number };
   /** A ranked game: rating points won or lost */
   ranked?: { delta: number };
+  /** The moves, encoded (see app/analysis/notation.ts): the game can be analysed */
+  moves?: string;
 };
 
 export type AccountView = PublicProfile & {

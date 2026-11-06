@@ -1,3 +1,4 @@
+import Link from "next/link";
 import styles from "./Compte.module.css";
 import ui from "../ui/common.module.css";
 import Icon from "../ui/Icon";
@@ -6,6 +7,7 @@ import Avatar from "../account/Avatar";
 import type { GameRecord } from "../account/protocol";
 import Pager, { usePages } from "../ui/Pager";
 import { REASON_LABELS, relativeTime } from "./format";
+import { analysisHref } from "../analysis/recent";
 
 // Games per page: the list fits on a phone screen
 const PAGE_SIZE = 5;
@@ -78,6 +80,16 @@ const RecentGames = ({ games }: { games: GameRecord[] }) => {
               <time className={styles.when} dateTime={new Date(game.at).toISOString()}>
                 {relativeTime(game.at)}
               </time>
+              {game.moves && (
+                <Link
+                  href={analysisHref(game.moves, game.side)}
+                  className={styles.analyse}
+                  aria-label="Analyser la partie"
+                  title="Analyser la partie"
+                >
+                  <Icon name="analysis" size={18} />
+                </Link>
+              )}
             </li>
           );
         })}

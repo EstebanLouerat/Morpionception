@@ -9,6 +9,7 @@
     "lint": "eslint .",
     "ai:arena": "tsc scripts/ai-arena.ts --outDir .arena --module commonjs --target es2020 --skipLibCheck && node .arena/scripts/ai-arena.js",
     "ai:check-openspiel": "tsc scripts/check-openspiel.ts --outDir .arena --module commonjs --target es2020 --skipLibCheck && node .arena/scripts/check-openspiel.js",
+    "analysis:check": "tsc scripts/check-analysis.ts --outDir .arena --module commonjs --target es2020 --skipLibCheck && node .arena/scripts/check-analysis.js",
     "learn:check": "tsc scripts/check-learn.ts --outDir .arena --module commonjs --target es2020 --skipLibCheck && node .arena/scripts/check-learn.js",
     "ranked:simulate": "tsc scripts/ranked-simulate.ts --outDir .arena --module commonjs --target es2020 --skipLibCheck && node .arena/scripts/ranked-simulate.js"
   },

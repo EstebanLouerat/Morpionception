@@ -6,6 +6,8 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { playFx } from "../audio/engine";
 import { Button, ButtonLink } from "../ui/Button";
+import { addRecentGame, analysisHref } from "../analysis/recent";
+import { decodeMoves, encodeMoves } from "../analysis/notation";
 import Loader from "../ui/Loader";
 import PageShell from "../ui/PageShell";
 import GameScreen from "./GameScreen";
@@ -240,6 +242,18 @@ const OnlineBoard = ({ code, view, receivedAt, connected }: OnlineBoardProps) =>
   else if (view.takebackRefused && !outcome) notice = `${friendName} a refusé de reprendre le coup.`;
   else if (takenBack) notice = "Coup repris.";
 
+  // Kept on the device once over, to be analysed later (a cancelled game is not). Keyed
+  // on plain values: every view pushed is a new object.
+  const history = view.history;
+  const encoded = history ? encodeMoves(history) : null;
+  const endReason = outcome?.reason ?? null;
+  const winner = outcome?.winner ?? null;
+  const opponent = them.profile?.pseudo ?? "Invité";
+  useEffect(() => {
+    if (!endReason || !encoded || cancelled) return;
+    addRecentGame({ mode: ranked ? "classe" : "ami", moves: decodeMoves(encoded), you, opponent, winner, reason: endReason });
+  }, [endReason, winner, encoded, cancelled, ranked, you, opponent]);
+
   // Whether this game went into the stats, said once it is over
   const statsNote = loggedInAsGuest
     ? "Tu as rejoint ce salon en invité : partie non comptée."
@@ -404,6 +418,13 @@ const OnlineBoard = ({ code, view, receivedAt, connected }: OnlineBoardProps) =>
               Quitter
             </Button>
           </div>
+          {history && !cancelled && (
+            <div className={styles.modalExtra}>
+              <ButtonLink variant="secondary" size="sm" icon="analysis" href={analysisHref(history, you)}>
+                Analyser la partie
+              </ButtonLink>
+            </div>
+          )}
         </>
       }
     />

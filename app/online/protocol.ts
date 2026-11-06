@@ -1,5 +1,5 @@
 // Messages exchanged between the online game pages and the rooms API (app/api/rooms).
-import type { Clocks, GameState, Outcome, Side } from "../game/rules";
+import type { Clocks, GameState, Move, Outcome, Side } from "../game/rules";
 import type { PublicProfile } from "../account/protocol";
 import type { RankedRating, RatingChange } from "../ranked/protocol";
 import type { SideChoice } from "../game/side";
@@ -111,6 +111,9 @@ export type RoomView = {
   outcome: Outcome;
   /** Moves played this round */
   moves: number;
+  /** Those moves in order, once the round is over (null before, and for a round begun
+   * before they were kept) */
+  history: Move[] | null;
   /** The result of this round went into the players' stats */
   recorded: boolean;
   /** A ranked game: each player's rating before it (null for a game with a friend) */

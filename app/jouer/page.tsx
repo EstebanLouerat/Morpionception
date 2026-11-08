@@ -71,6 +71,16 @@ export default function Jouer() {
             </span>
             <Icon name="chevronRight" className={styles.chevron} />
           </Link>
+          <Link href="/problemes" className={styles.card} onClick={() => playFx("click")}>
+            <span className={styles.icon}>
+              <Icon name="bulb" size={26} />
+            </span>
+            <span className={styles.text}>
+              <strong>Problèmes</strong>
+              <small>Trouve le coup du moteur et les victoires forcées, du facile à l&apos;expert.</small>
+            </span>
+            <Icon name="chevronRight" className={styles.chevron} />
+          </Link>
           <Link href="/analyse" className={styles.card} onClick={() => playFx("click")}>
             <span className={styles.icon}>
               <Icon name="analysis" size={26} />

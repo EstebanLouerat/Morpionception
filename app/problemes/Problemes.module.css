@@ -1,0 +1,128 @@
+/* --- Hub --- */
+.stats {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  padding: 0.7rem 0.9rem;
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: 0 2px 8px var(--shadow);
+  color: var(--text-muted);
+  font-weight: 700;
+}
+.stats b {
+  color: var(--text);
+}
+.levels {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.6rem;
+  list-style: none;
+}
+@media (min-width: 560px) {
+  .levels {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+.level {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 0.45rem 0.75rem;
+  padding: clamp(0.6rem, 1.8dvh, 0.95rem) 1rem;
+  border: 2px solid transparent;
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: 0 3px 10px var(--shadow);
+  color: var(--text);
+  text-decoration: none;
+  transition:
+    transform 0.15s,
+    border-color 0.2s;
+}
+.level:active {
+  transform: scale(0.98);
+}
+.level:focus-visible {
+  outline: 3px solid var(--primary-x);
+  outline-offset: 2px;
+}
+@media (hover: hover) {
+  .level:hover {
+    border-color: var(--primary-x);
+  }
+}
+.levelText {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+.levelText strong {
+  font-size: 1.05rem;
+}
+.levelText small {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+.levelCount {
+  color: var(--text-muted);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.chevron {
+  color: var(--primary-x);
+}
+.bar {
+  position: relative;
+  grid-column: 1 / -1;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--surface-muted);
+}
+.bar > span {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 999px;
+}
+.barTried {
+  background: color-mix(in srgb, var(--primary-x) 30%, transparent);
+}
+.barDone {
+  background: var(--primary-x);
+}
+.legend {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+.legend b {
+  color: var(--text);
+}
+
+/* --- A problem --- */
+.message {
+  min-height: 4.2em;
+  text-align: left;
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+@media (max-height: 620px) {
+  .legend {
+    display: none;
+  }
+}
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

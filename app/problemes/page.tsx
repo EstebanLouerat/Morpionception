@@ -69,7 +69,6 @@ export default function Problemes() {
                   href={target ? `/problemes?id=${target.id}` : "/problemes"}
                   className={styles.level}
                   onClick={() => playFx("click")}
-                  aria-label={`${level.label} : ${done} sur ${here.length} résolus`}
                 >
                   <span className={styles.levelText}>
                     <strong>{level.label}</strong>
@@ -77,6 +76,7 @@ export default function Problemes() {
                   </span>
                   <span className={styles.levelCount}>
                     {done}/{here.length}
+                    <span className={styles.srOnly}> résolus</span>
                   </span>
                   <Icon name="chevronRight" className={styles.chevron} />
                   <span className={styles.bar} aria-hidden="true">

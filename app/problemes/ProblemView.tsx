@@ -135,7 +135,7 @@ const ProblemView = ({ problem, onNext }: { problem: Problem; onNext: (() => voi
 
     // Not the answer
     setPhase("wrong");
-    if (problem.kind === "win" && option.w) {
+    if (problem.kind === "win" && option.w && step === total - 1) {
       // Still a win, the long way: no mistake, but there is quicker
       setMessage({ kind: "info", text: "Ce coup gagne aussi, mais plus lentement : il y a une victoire immédiate. Réessaie !" });
       return;
@@ -178,7 +178,7 @@ const ProblemView = ({ problem, onNext }: { problem: Problem; onNext: (() => voi
     setBoards({});
     setPending(null);
     setHint(false);
-    setSolution(false);
+    // A solution seen stays seen: the first try is recorded as such
   };
 
   const showHint = () => {

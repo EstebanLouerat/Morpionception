@@ -57,6 +57,14 @@ Ultimate tic-tac-toe ("morpion" in French) built with Next.js, React and Framer 
   the bottom (e5 is the center, i9 the top right corner), with the annotations
   ?!, ? and ?? and the coordinates along the board; the score sheet
   ("1. e5 d6?! 2. …") lists every move and can be copied.
+- Problems (`/problemes`, from the Jouer menu), on four levels from Facile to
+  Expert: positions from games the engine played against itself. "Victoire
+  forcée": win by force, every move of the line in turn while the opponent
+  defends as long as he can (a single winning move at each step). "Meilleur
+  coup": find the engine's top move, clearly ahead of the others. Every move is
+  explained, right or wrong (what it wins, blocks or gives away, the opponent's
+  answer played on the board, the chances it keeps), with a hint and the
+  solution on demand, the problems solved per level and a run of clean solves.
 - Ranked mode (`/jouer/classe`, account needed): matchmaking by rating, a
   rating like chess.com's (big jumps for new players that shrink game after game),
   ranks with divisions like Valorant from Bois to Morpion Mastermind, 5 placement
@@ -95,6 +103,8 @@ These are in the menus as "Bientôt" (coming soon) placeholders:
 | `app/ai/`          | AI: search engine, Web Worker, levels and record            |
 | `app/analysis/`    | Game review: evaluations, grades, worker pool, recent games |
 | `app/analyse/`     | Analysis page (review, variations, free board)              |
+| `app/problems/`    | Problems: the set (problems.json), explanations, progress   |
+| `app/problemes/`   | Problems pages (levels, solving)                            |
 | `scripts/`         | AI tools, ranked ladder simulator                           |
 | `training/`        | Python side of AI training (OpenSpiel game export)          |
 | `docs/`            | Guides (training a stronger AI)                             |
@@ -138,6 +148,18 @@ computer. A move is graded by the chances it cost its player (the expected score
 a draw counting half): under 2 points excellent, 2 to 5 bon, 5 to 10 imprécision,
 10 to 18 erreur, 18 and more gaffe; the engine's own move is the meilleur coup.
 Accuracy uses lichess' curve from the points lost.
+
+The problems (`scripts/make-problems.ts`) come from games of the engine against
+itself, with mistakes on purpose (some random moves, some weak searches). Each
+position is scanned with 15,000 random games, then candidates are checked in depth:
+a forced win is proven by the solver at every step (300,000 random games), every
+other move is searched to make sure it does not win too, and the opponent answers
+with his longest defence; a best-move problem needs its top move (or two) 15 points
+of chances ahead of every other move. Every legal move of every step is evaluated
+(its chances, the opponent's best answer), so the game explains any move at once,
+without running the engine. Levels: the length of the forced win (1, 2, 3, then 4
+moves), and for best moves how much search a weak engine needs to find it (50, 200,
+800 random games, or more).
 
 | Level         | How it plays                                   |
 | ------------- | ---------------------------------------------- |
@@ -369,3 +391,5 @@ MONGODB_URI="mongodb+srv://…"
 | `npm run ranked:simulate`              | Points per game and ladder spread for the ranked settings    |
 | `npm run learn:check`                  | Checks every exercise of the strategy book against the rules |
 | `npm run analysis:check`               | Checks the solver, the game notation and the move grades     |
+| `npm run problems:make -- <mode> …`    | Builds problems from engine games (see the script)           |
+| `npm run problems:check`               | Checks every problem against the rules                       |
